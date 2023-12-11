@@ -29,6 +29,10 @@ class DBAccess(ABC):
     def get_all_procedures(self):
         ...
 
+    @abstractmethod
+    def get_all_triggers(self):
+        ...
+
 
 class PostgreSQLAccess(DBAccess):
 
@@ -94,4 +98,11 @@ class PostgreSQLAccess(DBAccess):
             for line in cur:
                 yield line
 
+    def get_all_triggers(self):
+        if not self.connected:
+            self.connect()
 
+        with self.conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(self.SQL.triggers_text_select.value, (None,))
+            for line in cur:
+                yield line
