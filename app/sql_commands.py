@@ -32,3 +32,17 @@ class PostgreSQLCommands(Enum):
            and s.nspname not like 'pg_temp_%%'
            and s.nspname = coalesce( %s, s.nspname )
     '''
+
+    triggers_text_select = '''
+    select s.nspname as schema_name,
+           tr.tgname as trigger_name,
+           pg_get_triggerdef(tr.oid) trigger_text
+       
+      from pg_catalog.pg_trigger tr
+      join pg_catalog.pg_class c
+        on tr.tgrelid = c.oid
+      join pg_catalog.pg_namespace s
+        on c.relnamespace = s.oid
+     where not tr.tgisinternal
+           and s.nspname = coalesce( %s, s.nspname )
+    '''
