@@ -126,11 +126,13 @@ class DirTree:
     def __init__(self,
                  db_driver: DBAccess,
                  parent_dir: str = '.',
-                 changelog_type: ChangelogTypes = ChangelogTypes.united):
+                 changelog_type: ChangelogTypes = ChangelogTypes.united,
+                 tree_encoding='utf-8'):
         self.db_driver = db_driver
         self.parent_dir = parent_dir
         self.changelog_type = changelog_type
         self.o_types_paths = _OBJECTS_PATH_NAMES
+        self.encoding = tree_encoding
 
     def create_dir_tree(self,
                         rollbacks=False,
@@ -171,8 +173,7 @@ class DirTree:
     def put_object_into_tree(self,
                              o_type: str,
                              o_name: str,
-                             ddl_cmd: str,
-                             encoding='utf-8'):
+                             ddl_cmd: str):
         own_file, share_file = _DDL_TYPES_TO_PATHS_MAP['own_file'], _DDL_TYPES_TO_PATHS_MAP['share_file']
 
         if o_type in share_file.keys():
@@ -190,7 +191,7 @@ class DirTree:
                                            self.o_types_paths[o_path_type],
                                            f'{o_name}.sql')
                 try:
-                    o_file = open(o_file_path, 'r+', encoding=encoding)
+                    o_file = open(o_file_path, 'r+', encoding=self.encoding)
                 except FileNotFoundError:
                     continue
 
@@ -205,15 +206,15 @@ class DirTree:
                                        schema,
                                        self.o_types_paths[own_file[o_type]],
                                        f'{o_name}.sql')
-            o_file = open(o_file_path, 'w', encoding=encoding)
+            o_file = open(o_file_path, 'w', encoding=self.encoding)
             o_file.write(ddl_cmd)
             o_file.close()
 
     def put_ddl_file_into_tree(self,
                                file_name: str,
                                cmd_sep=';',
-                               encoding='utf-8'):
-        for cmd in self.parse_ddl_file(file_name, cmd_sep, encoding):
+                               file_encoding='utf-8'):
+        for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             try:
                 o_name, o_type = self.classify_ddl(cmd)
             except Exception:
@@ -226,14 +227,14 @@ class DirTree:
     def get_objects_in_creation_order(self,
                                       file_name: str,
                                       cmd_sep=';',
-                                      encoding='utf-8'):
+                                      file_encoding='utf-8'):
         own_file = _DDL_TYPES_TO_PATHS_MAP['own_file'].keys()
-        for cmd in self.parse_ddl_file(file_name, cmd_sep, encoding):
+        for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             o_name, o_type = self.classify_ddl(cmd)
             if o_type in own_file:
                 yield o_name, o_type
 
-    def put_routines_into_tree(self, encoding='utf-8'):
+    def put_routines_into_tree(self):
         own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
         for routine_rec in self.db_driver.get_all_procedures():
             routine_path = os.path.join(self.parent_dir,
@@ -241,17 +242,17 @@ class DirTree:
                                         self.o_types_paths[own_file[routine_rec['routine_type']]],
                                         f"{routine_rec['routine_name']}.sql")
 
-            routine_f = open(routine_path, 'w', encoding=encoding)
+            routine_f = open(routine_path, 'w', encoding=self.encoding)
             routine_f.write(routine_rec['routine_text'])
             routine_f.close()
 
-    def put_triggers_into_tree(self, encoding='utf-8'):
+    def put_triggers_into_tree(self):
         own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
         for trigger_rec in self.db_driver.get_all_triggers():
             trigger_path = os.path.join(self.parent_dir,
                                         trigger_rec['schema_name'],
                                         self.o_types_paths[own_file['trigger']],
                                         f"{trigger_rec['trigger_name']}.sql")
-            trigger_f = open(trigger_path, 'w', encoding=encoding)
+            trigger_f = open(trigger_path, 'w', encoding=self.encoding)
             trigger_f.write(trigger_rec['trigger_text'])
             trigger_f.close()
