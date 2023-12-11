@@ -245,3 +245,13 @@ class DirTree:
             routine_f.write(routine_rec['routine_text'])
             routine_f.close()
 
+    def put_triggers_into_tree(self, encoding='utf-8'):
+        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        for trigger_rec in self.db_driver.get_all_triggers():
+            trigger_path = os.path.join(self.parent_dir,
+                                        trigger_rec['schema_name'],
+                                        self.o_types_paths[own_file['trigger']],
+                                        f"{trigger_rec['trigger_name']}.sql")
+            trigger_f = open(trigger_path, 'w', encoding=encoding)
+            trigger_f.write(trigger_rec['trigger_text'])
+            trigger_f.close()
