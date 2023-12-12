@@ -3,6 +3,7 @@ import subprocess
 
 from enum import Enum
 from .db_connectors import DBAccess
+from .dir_tree import DirTree
 
 
 class LiqCommands(Enum):
@@ -52,10 +53,12 @@ class LiqInterpreter:
 
     def __init__(self,
                  db_driver: DBAccess,
+                 dir_tree: DirTree,
                  defaults_file,
                  changelog_file):
         self.os_user = os.getlogin()
         self.db_driver = db_driver
+        self.dir_tree = dir_tree
         self.defaults_file = defaults_file
         self.changelog_file = changelog_file
 
