@@ -236,8 +236,25 @@ class DirTree:
         own_file = _DDL_TYPES_TO_PATHS_MAP['own_file'].keys()
         for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             o_name, o_type = self.classify_ddl(cmd)
+
             if o_type in own_file:
-                yield o_name, o_type
+                o_name = o_name.replace('"', '')
+                o_path = o_name.split(sep='.')
+                schema, o_name = o_path[0], o_path[1]
+
+                res = {'object_name': o_name,
+                       'object_type': o_type,
+                       'sql_file_path': os.path.join('.',
+                                                     schema,
+                                                     self.o_types_paths[own_file[o_type]],
+                                                     f'{o_name}.sql')}
+                if self.rollbacks:
+                    res['rollback_file_path'] = os.path.join('.',
+                                                             schema,
+                                                             self.o_types_paths[own_file[o_type]],
+                                                             'rollbacks',
+                                                             f'rollback4{o_name}.sql')
+                yield res
 
     def put_routines_into_tree(self):
         own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
