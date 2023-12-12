@@ -67,6 +67,7 @@ class LiqInterpreter:
         return f'dump_4_{self.db_driver.db_name}.sql'
 
     def generate_change_log(self):
-        cmd = LiqCommands.CHANGELOG_GEN_FROM_DB.format(changelog_file=f'dump_4_{self.db_driver.db_name}.sql',
+        dump_file_path = os.path.join(self.dir_tree.parent_dir, self.dump_file_name)
+        cmd = LiqCommands.CHANGELOG_GEN_FROM_DB.format(changelog_file=dump_file_path,
                                                        defaults_file=self.defaults_file)
         subprocess.run(cmd, shell=True)
