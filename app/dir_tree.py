@@ -131,10 +131,12 @@ class DirTree:
                  db_driver: DBAccess,
                  parent_dir: str = '.',
                  changelog_type: ChangelogTypes = ChangelogTypes.united,
+                 rollbacks=False,
                  tree_encoding='utf-8'):
         self.db_driver = db_driver
         self.parent_dir = parent_dir
         self.changelog_type = changelog_type
+        self.rollbacks = rollbacks
         self.o_types_paths = _OBJECTS_PATH_NAMES
         self.encoding = tree_encoding
 
@@ -170,7 +172,7 @@ class DirTree:
                     continue
                 tp_path = schema_path + f'/{tp}'
                 os.mkdir(tp_path)
-                if rollbacks:
+                if self.rollbacks:
                     tp_r_path = tp_path + '/rollbacks'
                     os.mkdir(tp_r_path)
 
