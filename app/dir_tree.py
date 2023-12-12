@@ -6,7 +6,9 @@ from shutil import rmtree
 
 from .db_connectors import DBAccess
 
-_OBJECTS_PATH_NAMES = ('tables', 'views', 'procedures', 'functions', 'packages', 'scripts', 'triggers', 'sequences', 'materialized_views')
+_OBJECTS_PATH_NAMES = ('tables', 'views', 'procedures', 'functions',
+                       'packages', 'scripts', 'triggers', 'sequences',
+                       'materialized_views', 'other_objects')
 
 _DDL_TYPES_TO_PATHS_MAP = {
     'own_file': {
@@ -17,7 +19,8 @@ _DDL_TYPES_TO_PATHS_MAP = {
         'package': 4,
         'trigger': 6,
         'sequence': 7,
-        'materialized_view': 8},
+        'materialized_view': 8,
+        'composite_type': 9},
     'share_file': {
         'index': (0,),
         'constraint': (0,),
@@ -268,3 +271,14 @@ class DirTree:
             m_view_f = open(m_view_path, 'w', encoding=self.encoding)
             m_view_f.write(m_view_rec['mat_view_text'])
             m_view_f.close()
+
+    def put_composite_types_into_tree(self):
+        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        for c_type_rec in self.db_driver.get_all_composite_types():
+            c_type_path = os.path.join(self.parent_dir,
+                                       c_type_rec['schema_name'],
+                                       self.o_types_paths[own_file['composite_type']],
+                                       f"{c_type_rec['o_type_name']}.sql")
+            c_type_f = open(c_type_path, 'w', encoding=self.encoding)
+            c_type_f.write(c_type_rec['o_type_text'])
+
