@@ -59,3 +59,51 @@ class PostgreSQLCommands(Enum):
         on t.matviewname = c.relname
      where t.schemaname = coalesce( %s, t.schemaname )
     '''
+
+    object_types_select = '''
+    WITH types AS (SELECT n.nspname,
+                          pg_catalog.format_type(t.oid, NULL)                        AS obj_name,
+                          coalesce(pg_catalog.obj_description(t.oid, 'pg_type'), '') AS description
+                   FROM pg_catalog.pg_type t
+                            JOIN pg_catalog.pg_namespace n
+                                 ON n.oid = t.typnamespace
+                            join pg_catalog.pg_class c
+                                 on c.oid = t.typrelid
+                            left join pg_catalog.pg_type el
+                                      on el.oid = t.typelem
+                                          AND el.typarray = t.oid
+                   WHERE (t.typrelid = 0 or c.relkind = 'c')
+                     AND el.oid is null
+                     AND n.nspname not in ('pg_catalog', 'information_schema')
+                     AND n.nspname !~ '^pg_toast'
+                     AND n.nspname = coalesce(%s, n.nspname) 
+                     ),
+         cols AS (SELECT n.nspname                             AS schema_name,
+                         format_type(t.oid, NULL)              AS obj_name,
+                         a.attname                             AS column_name,
+                         format_type(a.atttypid, a.atttypmod)  AS data_type,
+                         a.attnotnull                          AS is_required,
+                         a.attnum                              AS ordinal_position,
+                         col_description(a.attrelid, a.attnum) AS description
+                  FROM pg_catalog.pg_attribute a
+                           JOIN pg_catalog.pg_type t
+                                ON a.attrelid = t.typrelid
+                           JOIN pg_catalog.pg_namespace n
+                                ON n.oid = t.typnamespace
+                           JOIN types
+                                ON types.nspname = n.nspname
+                                    AND types.obj_name = format_type(t.oid, NULL)
+                  WHERE a.attnum > 0
+                    AND NOT a.attisdropped)
+    SELECT cols.schema_name,
+           cols.obj_name as o_type_name,
+           format(E'create type %%s as \n(%%s);',
+           cols.obj_name,
+           string_agg(
+                   format('%%s %%s',
+                          cols.column_name,
+                          cols.data_type)::text, E',\n'::text order by cols.ordinal_position)) as o_type_text
+    FROM cols
+    group by cols.schema_name,
+           cols.obj_name
+    '''
