@@ -62,6 +62,10 @@ class LiqInterpreter:
         self.defaults_file = defaults_file
         self.changelog_file = changelog_file
 
+    @property
+    def dump_file_name(self):
+        return f'dump_4_{self.db_driver.db_name}.sql'
+
     def generate_change_log(self):
         cmd = LiqCommands.CHANGELOG_GEN_FROM_DB.format(changelog_file=f'dump_4_{self.db_driver.db_name}.sql',
                                                        defaults_file=self.defaults_file)
