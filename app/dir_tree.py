@@ -141,7 +141,6 @@ class DirTree:
         self.encoding = tree_encoding
 
     def create_dir_tree(self,
-                        rollbacks=False,
                         recreate=False):
 
         try:
