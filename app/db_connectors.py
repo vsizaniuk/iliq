@@ -37,6 +37,9 @@ class DBAccess(ABC):
     def get_all_mat_views(self):
         ...
 
+    @abstractmethod
+    def get_all_composite_types(self):
+        ...
 
 class PostgreSQLAccess(DBAccess):
 
@@ -117,5 +120,14 @@ class PostgreSQLAccess(DBAccess):
 
         with self.conn.cursor(row_factory=dict_row) as cur:
             cur.execute(self.SQL.materialized_views_select.value, (None,))
+            for line in cur:
+                yield line
+
+    def get_all_composite_types(self):
+        if not self.connected:
+            self.connect()
+
+        with self.conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(self.SQL.object_types_select.value, (None,))
             for line in cur:
                 yield line
