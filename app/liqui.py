@@ -71,3 +71,11 @@ class LiqInterpreter:
         cmd = LiqCommands.CHANGELOG_GEN_FROM_DB.format(changelog_file=dump_file_path,
                                                        defaults_file=self.defaults_file)
         subprocess.run(cmd, shell=True)
+
+    def init_project(self):
+        self.generate_change_log()
+        self.dir_tree.put_ddl_file_into_tree(self.dump_file_name)
+
+        for object_rec in self.dir_tree.get_objects_in_creation_order(self.dump_file_name):
+
+            ...
