@@ -46,3 +46,16 @@ class PostgreSQLCommands(Enum):
      where not tr.tgisinternal
            and s.nspname = coalesce( %s, s.nspname )
     '''
+
+    materialized_views_select = '''
+    select t.schemaname as schema_name,
+           t.matviewname as mat_view_name,
+           format(E'create materialized view %%s as \n %%s',
+                  t.matviewname,
+                  pg_get_viewdef(c.oid, true)) as mat_view_text
+    
+      from pg_catalog.pg_matviews t
+      join pg_catalog.pg_class c
+        on t.matviewname = c.relname
+     where t.schemaname = coalesce( %s, t.schemaname )
+    '''
