@@ -233,7 +233,7 @@ class DirTree:
                                       file_name: str,
                                       cmd_sep=';',
                                       file_encoding='utf-8'):
-        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file'].keys()
+        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
         for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             o_name, o_type = self.classify_ddl(cmd)
 
@@ -299,4 +299,3 @@ class DirTree:
                                        f"{c_type_rec['o_type_name']}.sql")
             c_type_f = open(c_type_path, 'w', encoding=self.encoding)
             c_type_f.write(c_type_rec['o_type_text'])
-
