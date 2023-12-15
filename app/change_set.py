@@ -49,6 +49,14 @@ _MAIN_LOG_TEMPLATE = {
 }
 
 
+def pretty_json(obj: dict | list) -> str:
+    obj = pprint.pformat(obj, width=140, sort_dicts=False)
+    obj = (obj.replace('\'', '"').
+           replace('True', 'true').
+           replace('False', 'false'))
+    return obj
+
+
 class ChangeSet:
 
     def __init__(self,
@@ -102,8 +110,7 @@ class ChangeSet:
         else:
             change_set_json.pop('rollback')
 
-        change_set_json = pprint.pformat(change_set_json, width=140, sort_dicts=False)
-        change_set_json = change_set_json.replace('\'', '"').replace('True', 'true').replace('False', 'false')
+        change_set_json = pretty_json(change_set_json)
 
         return change_set_json
 
