@@ -4,7 +4,7 @@ import subprocess
 from enum import Enum
 from .db_connectors import DBAccess
 from .dir_tree import DirTree, DDLTypesMap, ChangelogTypes
-from .change_set import ChangeSet
+from .change_set import ChangeSet, ChangeLog
 
 
 class LiqCommands(Enum):
@@ -61,7 +61,7 @@ class LiqInterpreter:
         self.db_driver = db_driver
         self.dir_tree = dir_tree
         self.defaults_file = defaults_file
-        self.changelog_file = changelog_file
+        self.change_log = ChangeLog(dir_tree.parent_dir, changelog_file)
 
     @property
     def dump_file_name(self):
@@ -104,5 +104,6 @@ class LiqInterpreter:
                 parent_path = os.path.join(self.dir_tree.parent_dir, f'{change_set.schema_name}_liq')
                 change_set.save_change_set(parent_path, False, self.dir_tree.encoding)
 
+            self.change_log.add_change_set(change_set)
 
-
+        self.change_log.save_change_log(encoding=self.dir_tree.encoding)
