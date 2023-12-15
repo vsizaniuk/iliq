@@ -82,6 +82,7 @@ class ChangeSet:
         self.comment = comment
         self.changes = []
         self.rollbacks = []
+        self._path = None
 
         for path in change_sql_paths:
             change = deepcopy(_SQL_FILE_TEMPLATE)['path'] = path
@@ -93,6 +94,12 @@ class ChangeSet:
                 rollback = deepcopy(_SQL_FILE_TEMPLATE)['path'] = path
                 rollback = deepcopy(_CHANGE_TEMPLATE)['sqlFile'] = rollback
                 self.rollbacks.append(rollback)
+
+    @property
+    def path(self):
+        if self._path is None:
+            raise ValueError(f'Change set {self.id} is not saved yet!')
+        return self._path
 
     def get_json(self):
         change_set_json = deepcopy(_CHANGE_SET_TEMPLATE)
@@ -124,10 +131,10 @@ class ChangeSet:
                         parent_path: str,
                         include_schema=False,
                         encoding='utf-8'):
-        change_set_path = os.path.join(parent_path,
-                                       self.get_file_name(include_schema))
+        self._path = os.path.join(parent_path,
+                                  self.get_file_name(include_schema))
 
-        change_set_f = open(change_set_path, 'w', encoding=encoding)
+        change_set_f = open(self.path, 'w', encoding=encoding)
         change_set_f.write(self.get_json())
         change_set_f.close()
 
