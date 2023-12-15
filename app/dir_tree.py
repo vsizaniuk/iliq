@@ -197,13 +197,17 @@ class DirTree:
         self.o_types_paths = _OBJECTS_PATH_NAMES
         self.encoding = tree_encoding
 
+    @property
+    def united_liq_path(self):
+        return os.path.join(self.parent_dir, f'!{self.db_driver.db_name}_liq')
+
     def create_dir_tree(self,
                         recreate=False):
 
         try:
             os.mkdir(self.parent_dir)
             if self.changelog_type == ChangelogTypes.united:
-                os.mkdir(self.parent_dir + '/!sar_liq')
+                os.mkdir(self.united_liq_path)
         except FileExistsError:
             ...
 
