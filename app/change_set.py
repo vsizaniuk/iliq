@@ -141,5 +141,22 @@ class ChangeSet:
 
 class ChangeLog:
 
-    def __init__(self):
-        ...
+    def __init__(self,
+                 parent_path: str,
+                 changelog_file_name: str):
+        self.parent_path = parent_path
+        self.file_name = changelog_file_name
+        self.change_log = deepcopy(_MAIN_LOG_TEMPLATE)
+
+    def add_change_set(self,
+                       change_set: ChangeSet):
+        include = deepcopy(_INCLUDE_TEMPLATE)
+        include['include']['file'] = change_set.path.replace(self.parent_path, '.')
+        self.change_log['databaseChangeLog'].append(include)
+
+    def save_change_log(self,
+                        encoding='utf-8'):
+        change_log_path = os.path.join(self.parent_path, self.file_name)
+        change_log_f = open(change_log_path, 'w', encoding=encoding)
+        change_log_f.write(pretty_json(self.change_log))
+        change_log_f.close()
