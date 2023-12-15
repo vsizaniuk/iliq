@@ -10,25 +10,6 @@ _OBJECTS_PATH_NAMES = ('tables', 'views', 'procedures', 'functions',
                        'packages', 'scripts', 'triggers', 'sequences',
                        'materialized_views', 'other_objects')
 
-_DDL_TYPES_TO_PATHS_MAP = {
-    'own_file': {
-        'table': 0,
-        'view': 1,
-        'procedure': 2,
-        'function': 3,
-        'package': 4,
-        'trigger': 6,
-        'sequence': 7,
-        'materialized_view': 8,
-        'composite_type': 9},
-    'share_file': {
-        'index': (0,),
-        'constraint': (0,),
-        'table_comment': (0,),
-        'column_comment': (0, 1),
-        'view_comment': (1,)}
-}
-
 _DDL_COMMANDS_MAP = {
     'CREATE': {'TABLE': {'IF': {'NOT': {'EXISTS': 'table'}}, '!TABLE': 'table'},
                'OR': {'ALTER': {'VIEW': 'view',
@@ -49,6 +30,82 @@ _DDL_COMMANDS_MAP = {
                        'COLUMN': 'column_comment',
                        'VIEW': 'view_comment'}}
 }
+
+
+class DDLTypesMap(Enum):
+    table = (0, True, 'version', False, False, True)
+    view = (1, True, 'view', False, True, True)
+    procedure = (2, True, 'proc', False, True, True)
+    function = (3, True, 'proc', False, True, True)
+    package = (4, True, 'proc', False, True, True)
+    script = (5, True, 'version', False, False, True)
+    trigger = (6, True, 'proc', False, True, True)
+    sequence = (7, True, 'version', False, False, True)
+    materialized_view = (8, True, 'view', False, True, True)
+    composite_type = (9, True, 'version', False, False, True)
+
+    index = ((0,), False, 'version')
+    constraint = ((0,), False, 'version')
+    table_comment = ((0,), False, 'version')
+    column_comment = ((0, 1), False, 'version')
+    view_comment = ((1,), False, 'version')
+
+    @classmethod
+    def get_own_file_types(cls):
+        for tp in cls:
+            if tp.own_file:
+                yield tp
+
+    @classmethod
+    def get_share_file_types(cls):
+        for tp in cls:
+            if not tp.own_file:
+                yield tp
+
+    @classmethod
+    def get_ddl_to_paths_map(cls, own_file: bool):
+        retrieve_func = cls.get_own_file_types if own_file else cls.get_share_file_types
+        res = {tp.name: tp.path_name_ref for tp in retrieve_func()}
+        return res
+
+    @classmethod
+    def get_ddl_to_liq_context_map(cls, own_file: bool):
+        retrieve_func = cls.get_own_file_types if own_file else cls.get_share_file_types
+        res = {tp.name: tp.liq_context for tp in retrieve_func()}
+        return res
+
+    @property
+    def path_name_ref(self):
+        return self.value[0]
+
+    @property
+    def own_file(self):
+        return self.value[1]
+
+    @property
+    def liq_context(self):
+        return self.value[2]
+
+    @property
+    def run_always(self):
+        try:
+            return self.value[3]
+        except IndexError:
+            return -1
+
+    @property
+    def run_on_change(self):
+        try:
+            return self.value[4]
+        except IndexError:
+            return -1
+
+    @property
+    def fail_on_error(self):
+        try:
+            return self.value[5]
+        except IndexError:
+            return -1
 
 
 class ChangelogTypes(Enum):
@@ -179,7 +236,7 @@ class DirTree:
                              o_type: str,
                              o_name: str,
                              ddl_cmd: str):
-        own_file, share_file = _DDL_TYPES_TO_PATHS_MAP['own_file'], _DDL_TYPES_TO_PATHS_MAP['share_file']
+        own_file, share_file = DDLTypesMap.get_ddl_to_paths_map(True), DDLTypesMap.get_ddl_to_paths_map(False)
 
         if o_type in share_file.keys():
             if o_type in ('index', 'constraint'):
@@ -233,7 +290,7 @@ class DirTree:
                                       file_name: str,
                                       cmd_sep=';',
                                       file_encoding='utf-8'):
-        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             o_name, o_type = self.classify_ddl(cmd)
 
@@ -257,7 +314,7 @@ class DirTree:
                 yield res
 
     def put_routines_into_tree(self):
-        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for routine_rec in self.db_driver.get_all_procedures():
             routine_path = os.path.join(self.parent_dir,
                                         routine_rec['schema_name'],
@@ -269,7 +326,7 @@ class DirTree:
             routine_f.close()
 
     def put_triggers_into_tree(self):
-        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for trigger_rec in self.db_driver.get_all_triggers():
             trigger_path = os.path.join(self.parent_dir,
                                         trigger_rec['schema_name'],
@@ -280,7 +337,7 @@ class DirTree:
             trigger_f.close()
 
     def put_mat_views_into_tree(self):
-        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for m_view_rec in self.db_driver.get_all_mat_views():
             m_view_path = os.path.join(self.parent_dir,
                                        m_view_rec['schema_name'],
@@ -291,7 +348,7 @@ class DirTree:
             m_view_f.close()
 
     def put_composite_types_into_tree(self):
-        own_file = _DDL_TYPES_TO_PATHS_MAP['own_file']
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for c_type_rec in self.db_driver.get_all_composite_types():
             c_type_path = os.path.join(self.parent_dir,
                                        c_type_rec['schema_name'],
