@@ -303,7 +303,8 @@ class DirTree:
                 o_path = o_name.split(sep='.')
                 schema, o_name = o_path[0], o_path[1]
 
-                res = {'object_name': o_name,
+                res = {'schema_name': schema,
+                       'object_name': o_name,
                        'object_type': o_type,
                        'sql_file_path': os.path.join('.',
                                                      schema,
