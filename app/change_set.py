@@ -121,18 +121,14 @@ class ChangeSet:
 
         return change_set_json
 
-    def get_file_name(self, include_schema=False):
-        if include_schema:
-            return f'{self.schema_name}_{self.id}.json'
-        else:
-            return f'{self.id}.json'
+    @property
+    def file_name(self):
+        return f'{self.id}.json'
 
     def save_change_set(self,
                         parent_path: str,
-                        include_schema=False,
                         encoding='utf-8'):
-        self._path = os.path.join(parent_path,
-                                  self.get_file_name(include_schema))
+        self._path = os.path.join(parent_path, self.file_name)
 
         change_set_f = open(self.path, 'w', encoding=encoding)
         change_set_f.write(self.get_json())
