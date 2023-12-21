@@ -206,27 +206,20 @@ class DirTree:
 
         try:
             os.mkdir(self.parent_dir)
-            if self.changelog_type == ChangelogTypes.united:
-                os.mkdir(self.united_liq_path)
+            os.mkdir(self.united_liq_path)
         except FileExistsError:
-            ...
+            if recreate:
+                rmtree(self.parent_dir)
+                os.mkdir(self.parent_dir)
+                os.mkdir(self.united_liq_path)
+            else:
+                raise
 
         for s in self.db_driver.get_all_schemas():
-            schema_path = self.parent_dir + f'/{s}'
-            try:
-                os.mkdir(schema_path)
-                if self.changelog_type == ChangelogTypes.per_schema:
-                    os.mkdir(schema_path + '_liq')
-            except FileExistsError:
-                if recreate:
-                    rmtree(schema_path)
-                    os.mkdir(schema_path)
-                    if self.changelog_type == ChangelogTypes.per_schema:
-                        rmtree(schema_path + '_liq')
-                        os.mkdir(schema_path + '_liq')
-                else:
-                    raise FileExistsError(f'Directory tree for {schema_path} is already created!')
-
+            schema_path = os.path.join(self.parent_dir, s)
+            liq_schema_path = os.path.join(self.united_liq_path, s)
+            os.mkdir(schema_path)
+            os.mkdir(liq_schema_path)
             for tp in self.o_types_paths:
                 if tp == 'packages' and self.db_driver.rdbms_type != 'oracle':
                     continue
