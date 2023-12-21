@@ -269,27 +269,32 @@ class DirTree:
             o_file.write(ddl_cmd)
             o_file.close()
 
+    def _add_paths_to_object_rec(self, object_rec: dict):
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
+        type_path_name = self.o_types_paths[own_file[object_rec['object_type']]]
+
+        object_rec['sql_file_path'] = os.path.join('.',
+                                                   object_rec['schema_name'],
+                                                   type_path_name,
+                                                   f"{object_rec['object_name']}.sql")
+
+        if self.rollbacks:
+            object_rec['rollback_file_path'] = os.path.join('.',
+                                                            object_rec['schema_name'],
+                                                            type_path_name,
+                                                            'rollbacks',
+                                                            f"rollback4{object_rec['object_name']}.sql")
+
     def put_ddl_file_into_tree(self,
                                file_name: str,
                                cmd_sep=';',
                                file_encoding='utf-8'):
-        for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
-            try:
-                o_name, o_type = self.classify_ddl(cmd)
-            except Exception:
-                print(cmd)
-                raise
-
-            o_name = o_name.replace('"', '')
-            self.put_object_into_tree(o_type, o_name, cmd)
-
-    def get_objects_in_creation_order(self,
-                                      file_name: str,
-                                      cmd_sep=';',
-                                      file_encoding='utf-8'):
         own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             o_name, o_type = self.classify_ddl(cmd)
+            o_name = o_name.replace('"', '')
+
+            self.put_object_into_tree(o_type, o_name, cmd)
 
             if o_type in own_file:
                 o_name = o_name.replace('"', '')
@@ -298,17 +303,10 @@ class DirTree:
 
                 res = {'schema_name': schema,
                        'object_name': o_name,
-                       'object_type': o_type,
-                       'sql_file_path': os.path.join('.',
-                                                     schema,
-                                                     self.o_types_paths[own_file[o_type]],
-                                                     f'{o_name}.sql')}
-                if self.rollbacks:
-                    res['rollback_file_path'] = os.path.join('.',
-                                                             schema,
-                                                             self.o_types_paths[own_file[o_type]],
-                                                             'rollbacks',
-                                                             f'rollback4{o_name}.sql')
+                       'object_type': o_type}
+
+                self._add_paths_to_object_rec(res)
+
                 yield res
 
     def put_routines_into_tree(self):
@@ -316,41 +314,61 @@ class DirTree:
         for routine_rec in self.db_driver.get_all_procedures():
             routine_path = os.path.join(self.parent_dir,
                                         routine_rec['schema_name'],
-                                        self.o_types_paths[own_file[routine_rec['routine_type']]],
-                                        f"{routine_rec['routine_name']}.sql")
+                                        self.o_types_paths[own_file[routine_rec['object_type']]],
+                                        f"{routine_rec['object_name']}.sql")
+
+            self._add_paths_to_object_rec(routine_rec)
 
             routine_f = open(routine_path, 'w', encoding=self.encoding)
-            routine_f.write(routine_rec['routine_text'])
+            routine_f.write(routine_rec.pop('object_text'))
             routine_f.close()
+
+            yield routine_rec
 
     def put_triggers_into_tree(self):
         own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for trigger_rec in self.db_driver.get_all_triggers():
             trigger_path = os.path.join(self.parent_dir,
                                         trigger_rec['schema_name'],
-                                        self.o_types_paths[own_file['trigger']],
-                                        f"{trigger_rec['trigger_name']}.sql")
+                                        self.o_types_paths[own_file[trigger_rec['object_type']]],
+                                        f"{trigger_rec['object_name']}.sql")
+
+            self._add_paths_to_object_rec(trigger_rec)
+
             trigger_f = open(trigger_path, 'w', encoding=self.encoding)
-            trigger_f.write(trigger_rec['trigger_text'])
+            trigger_f.write(trigger_rec.pop('object_text'))
             trigger_f.close()
+
+            yield trigger_rec
 
     def put_mat_views_into_tree(self):
         own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for m_view_rec in self.db_driver.get_all_mat_views():
             m_view_path = os.path.join(self.parent_dir,
                                        m_view_rec['schema_name'],
-                                       self.o_types_paths[own_file['materialized_view']],
-                                       f"{m_view_rec['mat_view_name']}.sql")
+                                       self.o_types_paths[own_file[m_view_rec['object_type']]],
+                                       f"{m_view_rec['object_name']}.sql")
+
+            self._add_paths_to_object_rec(m_view_rec)
+
             m_view_f = open(m_view_path, 'w', encoding=self.encoding)
-            m_view_f.write(m_view_rec['mat_view_text'])
+            m_view_f.write(m_view_rec.pop('object_text'))
             m_view_f.close()
+
+            yield m_view_rec
 
     def put_composite_types_into_tree(self):
         own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for c_type_rec in self.db_driver.get_all_composite_types():
             c_type_path = os.path.join(self.parent_dir,
                                        c_type_rec['schema_name'],
-                                       self.o_types_paths[own_file['composite_type']],
-                                       f"{c_type_rec['o_type_name']}.sql")
+                                       self.o_types_paths[own_file[c_type_rec['object_type']]],
+                                       f"{c_type_rec['object_name']}.sql")
+
+            self._add_paths_to_object_rec(c_type_rec)
+
             c_type_f = open(c_type_path, 'w', encoding=self.encoding)
-            c_type_f.write(c_type_rec['o_type_text'])
+            c_type_f.write(c_type_rec.pop('object_text'))
+            c_type_f.close()
+
+            yield c_type_rec
