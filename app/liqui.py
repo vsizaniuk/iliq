@@ -77,11 +77,6 @@ class LiqInterpreter:
 
         self.dir_tree.create_dir_tree(recreate=True)
         self.generate_change_log()
-        self.dir_tree.put_ddl_file_into_tree(self.dump_file_name)
-        self.dir_tree.put_routines_into_tree()
-        self.dir_tree.put_triggers_into_tree()
-        self.dir_tree.put_mat_views_into_tree()
-        self.dir_tree.put_composite_types_into_tree()
 
         def put_change_set(p_object_rec):
             o_type = DDLTypesMap[p_object_rec['object_type']]
@@ -100,5 +95,15 @@ class LiqInterpreter:
             change_set.save_change_set(parent_path, self.dir_tree.encoding)
 
             self.change_log.add_change_set(change_set)
+
+        for object_rec in self.dir_tree.put_ddl_file_into_tree(self.dump_file_name):
+            put_change_set(object_rec)
+
+        for func in (self.dir_tree.put_composite_types_into_tree,
+                     self.dir_tree.put_mat_views_into_tree,
+                     self.dir_tree.put_routines_into_tree,
+                     self.dir_tree.put_triggers_into_tree):
+            for object_rec in func():
+                put_change_set(object_rec)
 
         self.change_log.save_change_log(encoding=self.dir_tree.encoding)
