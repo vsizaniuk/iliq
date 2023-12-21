@@ -16,10 +16,10 @@ class PostgreSQLCommands(Enum):
 
     routines_text_select = '''
     SELECT s.nspname as schema_name, 
-           f.proname as routine_name, 
+           f.proname as object_name, 
            case when f.prokind = 'f' then 'function'
-                when f.prokind = 'p' then 'procedure' end as routine_type,
-           pg_get_functiondef(f.oid) routine_text
+                when f.prokind = 'p' then 'procedure' end as object_type,
+           pg_get_functiondef(f.oid) object_text
       FROM pg_catalog.pg_proc f
       JOIN pg_catalog.pg_namespace s 
         ON f.pronamespace = s.oid
@@ -35,8 +35,9 @@ class PostgreSQLCommands(Enum):
 
     triggers_text_select = '''
     select s.nspname as schema_name,
-           tr.tgname as trigger_name,
-           pg_get_triggerdef(tr.oid) trigger_text
+           tr.tgname as object_name,
+           'trigger' as object_type,
+           pg_get_triggerdef(tr.oid) object_text
        
       from pg_catalog.pg_trigger tr
       join pg_catalog.pg_class c
@@ -49,10 +50,11 @@ class PostgreSQLCommands(Enum):
 
     materialized_views_select = '''
     select t.schemaname as schema_name,
-           t.matviewname as mat_view_name,
+           t.matviewname as object_name,
+           'materialized_view' as object_type,
            format(E'create materialized view %%s as \n %%s',
                   t.matviewname,
-                  pg_get_viewdef(c.oid, true)) as mat_view_text
+                  pg_get_viewdef(c.oid, true)) as object_text
     
       from pg_catalog.pg_matviews t
       join pg_catalog.pg_class c
@@ -96,13 +98,14 @@ class PostgreSQLCommands(Enum):
                   WHERE a.attnum > 0
                     AND NOT a.attisdropped)
     SELECT cols.schema_name,
-           cols.obj_name as o_type_name,
+           cols.obj_name as object_name,
+           'composite_type' as object_type,
            format(E'create type %%s as \n(%%s);',
            cols.obj_name,
            string_agg(
                    format('%%s %%s',
                           cols.column_name,
-                          cols.data_type)::text, E',\n'::text order by cols.ordinal_position)) as o_type_text
+                          cols.data_type)::text, E',\n'::text order by cols.ordinal_position)) as object_text
     FROM cols
     group by cols.schema_name,
            cols.obj_name
