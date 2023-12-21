@@ -83,26 +83,21 @@ class LiqInterpreter:
         self.dir_tree.put_mat_views_into_tree()
         self.dir_tree.put_composite_types_into_tree()
 
-        for object_rec in self.dir_tree.get_objects_in_creation_order(self.dump_file_name):
-            o_type = DDLTypesMap[object_rec['object_type']]
-            change_set = ChangeSet(schema_name=object_rec['schema_name'],
-                                   change_set_id=object_rec['object_name'],
+        def put_change_set(p_object_rec):
+            o_type = DDLTypesMap[p_object_rec['object_type']]
+            change_set = ChangeSet(schema_name=p_object_rec['schema_name'],
+                                   change_set_id=p_object_rec['object_name'],
                                    author=self.os_user,
                                    context=o_type.liq_context,
                                    dbms=self.db_driver.rdbms_type,
                                    run_always=o_type.run_always,
                                    run_on_change=o_type.run_on_change,
                                    fail_on_error=o_type.fail_on_error,
-                                   comment=f'{object_rec["object_name"]} {o_type.name} creation scrip',
-                                   change_sql_paths=[object_rec['sql_file_path']])
+                                   comment=f'{p_object_rec["object_name"]} {o_type.name} creation scrip',
+                                   change_sql_paths=[p_object_rec['sql_file_path']])
 
-            has_united_change_log = self.dir_tree.changelog_type == ChangelogTypes.united
-            if has_united_change_log:
-                parent_path = self.dir_tree.united_liq_path
-                change_set.save_change_set(parent_path, True, self.dir_tree.encoding)
-            else:
-                parent_path = os.path.join(self.dir_tree.parent_dir, f'{change_set.schema_name}_liq')
-                change_set.save_change_set(parent_path, False, self.dir_tree.encoding)
+            parent_path = os.path.join(self.dir_tree.united_liq_path, change_set.schema_name)
+            change_set.save_change_set(parent_path, self.dir_tree.encoding)
 
             self.change_log.add_change_set(change_set)
 
