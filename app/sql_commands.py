@@ -31,6 +31,7 @@ class PostgreSQLCommands(Enum):
            and s.nspname not like 'pg_toast%%'
            and s.nspname not like 'pg_temp_%%'
            and s.nspname = coalesce( %s, s.nspname )
+    order by f.oid asc 
     '''
 
     triggers_text_select = '''
@@ -46,6 +47,7 @@ class PostgreSQLCommands(Enum):
         on c.relnamespace = s.oid
      where not tr.tgisinternal
            and s.nspname = coalesce( %s, s.nspname )
+     order by tr.oid asc
     '''
 
     materialized_views_select = '''
@@ -60,6 +62,7 @@ class PostgreSQLCommands(Enum):
       join pg_catalog.pg_class c
         on t.matviewname = c.relname
      where t.schemaname = coalesce( %s, t.schemaname )
+     order by c.oid asc
     '''
 
     object_types_select = '''
