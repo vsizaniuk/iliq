@@ -118,7 +118,8 @@ class LiqInterpreter:
 
             self.change_log.add_change_set(change_set)
 
-        for object_rec in self.dir_tree.put_ddl_file_into_tree(self.dump_file_name):
+        dump_file_path = os.path.join(self.dir_tree.parent_dir, self.dump_file_name)
+        for object_rec in self.dir_tree.put_ddl_file_into_tree(dump_file_path):
             put_change_set(object_rec)
 
         for func in (self.dir_tree.put_composite_types_into_tree,
