@@ -87,14 +87,16 @@ class ChangeSet:
         self._path = None
 
         for path in change_sql_paths:
-            change = deepcopy(_SQL_FILE_TEMPLATE)['path'] = path
-            change = deepcopy(_CHANGE_TEMPLATE)['sqlFile'] = change
+            change = deepcopy(_CHANGE_TEMPLATE)
+            change['sqlFile'] = deepcopy(_SQL_FILE_TEMPLATE)
+            change['sqlFile']['path'] = path
             self.changes.append(change)
 
         if rollback_sql_paths:
             for path in rollback_sql_paths:
-                rollback = deepcopy(_SQL_FILE_TEMPLATE)['path'] = path
-                rollback = deepcopy(_CHANGE_TEMPLATE)['sqlFile'] = rollback
+                rollback = deepcopy(_CHANGE_TEMPLATE)
+                rollback['sqlFile'] = deepcopy(_SQL_FILE_TEMPLATE)
+                rollback['sqlFile']['path'] = path
                 self.rollbacks.append(rollback)
 
     @property
