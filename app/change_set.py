@@ -142,10 +142,6 @@ class ChangeSet:
 
         return change_set_json
 
-    @property
-    def file_name(self):
-        return f'{self.id}.json'
-
     def save_change_set(self,
                         parent_path: str,
                         encoding='utf-8'):
