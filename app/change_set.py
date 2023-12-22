@@ -137,6 +137,7 @@ class ChangeSet:
         else:
             change_set_json.pop('rollback')
 
+        change_set_json = {'databaseChangeLog': [{'changeSet': change_set_json}]}
         change_set_json = pretty_json(change_set_json)
 
         return change_set_json
