@@ -61,6 +61,7 @@ class ChangeSet:
 
     def __init__(self,
                  schema_name: str,
+                 object_type: str,
                  change_set_id: str,
                  author: str,
                  context: str,
@@ -72,7 +73,8 @@ class ChangeSet:
                  change_sql_paths: list,
                  rollback_sql_paths: list = None):
         self.schema_name = schema_name
-        self.id = change_set_id
+        self.object_type = object_type
+        self._id = change_set_id
         self.author = author
         self.context = context
         self.dbms = dbms
