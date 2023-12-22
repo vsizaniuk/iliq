@@ -16,7 +16,11 @@ class PostgreSQLCommands(Enum):
 
     routines_text_select = '''
     SELECT s.nspname as schema_name, 
-           f.proname as object_name, 
+           case when count(*) over (partition by f.proname) > 1 then
+               f.proname ||'_'||row_number() over (partition by f.proname order by f.oid asc)
+               else
+               f.proname
+           end as object_name, 
            case when f.prokind = 'f' then 'function'
                 when f.prokind = 'p' then 'procedure' end as object_type,
            pg_get_functiondef(f.oid) object_text
