@@ -105,7 +105,23 @@ class ChangeSet:
             raise ValueError(f'Change set {self.id} is not saved yet!')
         return self._path
 
-    def get_json(self):
+    @property
+    def id(self):
+        return f'{self.schema_name}.{self._id}'
+
+    @property
+    def file_name(self):
+        return f'{self.id}.json'
+
+    @property
+    def extended_id(self):
+        return f'{self.schema_name}.{self._id}_{self.object_type}'
+
+    @property
+    def extended_file_name(self):
+        return f'{self.extended_id}.json'
+
+    def get_json(self, is_extended_id=False):
         change_set_json = deepcopy(_CHANGE_SET_TEMPLATE)
         change_set_json['id'] = self.id
         change_set_json['author'] = self.author
