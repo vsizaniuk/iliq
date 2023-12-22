@@ -9,12 +9,13 @@ from .change_set import ChangeSet, ChangeLog
 
 class LiqCommands(Enum):
     CHANGELOG_GEN_FROM_DB = ('liquibase generate-changelog '
-                             '--changelog-file={changelog_file} '
-                             '--defaults-file={defaults_file}')
-    UPDATE_DATABASE = ('liquibase '
-                       '--defaults-file={defaults_file} '
-                       '--changelog-file={changelog_file} '
-                       'update')
+                             '--changelog-file={changelog_file} ' 
+                             '--defaults-file={defaults_file} '
+                             '--diff-types=tables,columns,indexes,foreignkeys,primarykeys,uniqueconstraints,sequences')  # '--log-level=DEBUG '
+    UPDATE = ('liquibase '
+              '--defaults-file={defaults_file} '
+              '--changelog-file={changelog_file} '
+              'update')
     UPDATE_SQL = ('liquibase '
                   '--changelog-file={changelog_file} '
                   '--defaults-file={defaults_file} '
