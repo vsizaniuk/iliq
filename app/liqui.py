@@ -102,6 +102,7 @@ class LiqInterpreter:
         def put_change_set(p_object_rec):
             o_type = DDLTypesMap[p_object_rec['object_type']]
             change_set = ChangeSet(schema_name=p_object_rec['schema_name'],
+                                   object_type=o_type.name,
                                    change_set_id=p_object_rec['object_name'],
                                    author=self.os_user,
                                    context=o_type.liq_context,
