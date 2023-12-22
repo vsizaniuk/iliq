@@ -41,6 +41,11 @@ class DBAccess(ABC):
     def get_all_composite_types(self):
         ...
 
+    @abstractmethod
+    def get_views_routines_triggers(self):
+        ...
+
+
 class PostgreSQLAccess(DBAccess):
 
     SQL = PostgreSQLCommands
@@ -129,5 +134,14 @@ class PostgreSQLAccess(DBAccess):
 
         with self.conn.cursor(row_factory=dict_row) as cur:
             cur.execute(self.SQL.object_types_select.value, (None,))
+            for line in cur:
+                yield line
+
+    def get_views_routines_triggers(self):
+        if not self.connected:
+            self.connect()
+
+        with self.conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(self.SQL.views_routines_triggers_select.value, (None,))
             for line in cur:
                 yield line
