@@ -147,8 +147,12 @@ class ChangeSet:
                         encoding='utf-8'):
         self._path = os.path.join(parent_path, self.file_name)
 
+        is_extended = True if os.path.exists(self.path) else False
+        if is_extended:
+            self._path = os.path.join(parent_path, self.extended_file_name)
+
         change_set_f = open(self.path, 'w', encoding=encoding)
-        change_set_f.write(self.get_json())
+        change_set_f.write(self.get_json(is_extended))
         change_set_f.close()
 
 
