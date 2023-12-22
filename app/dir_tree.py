@@ -309,6 +309,23 @@ class DirTree:
 
                 yield res
 
+    def put_views_routines_triggers_into_tree(self):
+        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
+
+        for object_rec in self.db_driver.get_views_routines_triggers():
+            object_path = os.path.join(self.parent_dir,
+                                       object_rec['schema_name'],
+                                       self.o_types_paths[own_file[object_rec['object_type']]],
+                                       f"{object_rec['object_name']}.sql")
+
+            self._add_paths_to_object_rec(object_rec)
+
+            object_f = open(object_path, 'w', encoding=self.encoding)
+            object_f.write(object_rec.pop('object_text'))
+            object_f.close()
+
+            yield object_rec
+
     def put_routines_into_tree(self):
         own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for routine_rec in self.db_driver.get_all_procedures():
