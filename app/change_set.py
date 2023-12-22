@@ -123,7 +123,7 @@ class ChangeSet:
 
     def get_json(self, is_extended_id=False):
         change_set_json = deepcopy(_CHANGE_SET_TEMPLATE)
-        change_set_json['id'] = self.id
+        change_set_json['id'] = self.extended_id if is_extended_id else self.id
         change_set_json['author'] = self.author
         change_set_json['context'] = self.context
         change_set_json['dbms'] = self.dbms
