@@ -123,9 +123,7 @@ class LiqInterpreter:
             put_change_set(object_rec)
 
         for func in (self.dir_tree.put_composite_types_into_tree,
-                     self.dir_tree.put_mat_views_into_tree,
-                     self.dir_tree.put_routines_into_tree,
-                     self.dir_tree.put_triggers_into_tree):
+                     self.dir_tree.put_views_routines_triggers_into_tree):
             for object_rec in func():
                 put_change_set(object_rec)
 
