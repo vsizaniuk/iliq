@@ -175,7 +175,7 @@ class DirTree:
                     break
 
                 if not line.startswith('--'):
-                    cmd += line.strip()
+                    cmd += '\n' + line.strip()
                     if '\'' in cmd and not DirTree.check_quotations(cmd):
                         continue
 
