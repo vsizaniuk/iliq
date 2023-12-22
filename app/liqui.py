@@ -74,6 +74,26 @@ class LiqInterpreter:
                                                        defaults_file=self.defaults_file)
         subprocess.run(cmd, shell=True)
 
+    def get_update_sql(self, contexts: list=None):
+        if contexts:
+            cmd = LiqCommands.CONTEXT_UPDATE_SQL.format(context=','.join(contexts),
+                                                        changelog_file=self.change_log.file_name,
+                                                        defaults_file=self.defaults_file)
+        else:
+            cmd = LiqCommands.UPDATE_SQL.format(changelog_file=self.change_log.file_name,
+                                                defaults_file=self.defaults_file)
+        subprocess.run(cmd, shell=True, cwd=self.dir_tree.parent_dir)
+
+    def update(self, contexts: list=None):
+        if contexts:
+            cmd = LiqCommands.CONTEXT_UPDATE.format(context=','.join(contexts),
+                                                    changelog_file=self.change_log.file_name,
+                                                    defaults_file=self.defaults_file)
+        else:
+            cmd = LiqCommands.UPDATE.format(changelog_file=self.change_log.file_name,
+                                            defaults_file=self.defaults_file)
+        subprocess.run(cmd, shell=True, cwd=self.dir_tree.parent_dir)
+
     def init_project(self):
 
         self.dir_tree.create_dir_tree(recreate=True)
