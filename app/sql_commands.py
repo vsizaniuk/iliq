@@ -63,7 +63,8 @@ class PostgreSQLCommands(Enum):
     '''
 
     object_types_select = '''
-    WITH types AS (SELECT n.nspname,
+    WITH types AS (SELECT t.oid,
+                          n.nspname,
                           pg_catalog.format_type(t.oid, NULL)                        AS obj_name,
                           coalesce(pg_catalog.obj_description(t.oid, 'pg_type'), '') AS description
                    FROM pg_catalog.pg_type t
@@ -78,9 +79,10 @@ class PostgreSQLCommands(Enum):
                      AND el.oid is null
                      AND n.nspname not in ('pg_catalog', 'information_schema')
                      AND n.nspname !~ '^pg_toast'
-                     AND n.nspname = coalesce(%s, n.nspname) 
-                     ),
-         cols AS (SELECT n.nspname                             AS schema_name,
+                     AND n.nspname = coalesce(%s, n.nspname)
+    ),
+         cols AS (SELECT types.oid,
+                         n.nspname                             AS schema_name,
                          format_type(t.oid, NULL)              AS obj_name,
                          a.attname                             AS column_name,
                          format_type(a.atttypid, a.atttypmod)  AS data_type,
@@ -98,15 +100,17 @@ class PostgreSQLCommands(Enum):
                   WHERE a.attnum > 0
                     AND NOT a.attisdropped)
     SELECT cols.schema_name,
-           cols.obj_name as object_name,
-           'composite_type' as object_type,
+           cols.obj_name                                                                              as object_name,
+           'composite_type'                                                                           as object_type,
            format(E'create type %%s as \n(%%s);',
-           cols.obj_name,
-           string_agg(
-                   format('%%s %%s',
-                          cols.column_name,
-                          cols.data_type)::text, E',\n'::text order by cols.ordinal_position)) as object_text
+                  cols.obj_name,
+                  string_agg(
+                          format('%%s %%s',
+                                 cols.column_name,
+                                 cols.data_type)::text, E',\n'::text order by cols.ordinal_position)) as object_text
     FROM cols
     group by cols.schema_name,
-           cols.obj_name
+             cols.obj_name,
+             cols.oid
+    order by cols.oid asc
     '''
