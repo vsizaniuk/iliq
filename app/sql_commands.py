@@ -14,6 +14,69 @@ class PostgreSQLCommands(Enum):
           and s.nspname = coalesce( %s, s.nspname )
     '''
 
+    views_routines_triggers_select = '''
+    with objects_as_created as (select s.nspname                           as schema_name,
+                                       t.oid,
+                                       case
+                                           when t.relkind = 'v' then
+                                               'view'
+                                           else 'materialized_view' end    as object_type,
+                                       t.relname                           as object_name,
+                                       format(case
+                                                  when t.relkind = 'v' then
+                                                      E'create or replace view %%s.%%s as \n %%s'
+                                                  else E'create materialized view %%s.%%s as \n %%s' end,
+                                              s.nspname,
+                                              t.relname,
+                                              pg_get_viewdef(t.oid, true)) as object_text
+                                from pg_catalog.pg_class t
+                                         join pg_catalog.pg_namespace s
+                                              on t.relnamespace = s.oid
+                                where t.relkind in ('v', 'm')
+    
+                                union all
+    
+                                select s.nspname,
+                                       t.oid,
+                                       case
+                                           when t.prokind = 'f' then 'function'
+                                           when t.prokind = 'p' then 'procedure' end,
+                                       case when count(*) over (partition by t.proname) > 1 then
+                                            t.proname ||'_'||row_number() over (partition by t.proname order by t.oid asc)
+                                            else
+                                            t.proname
+                                       end as object_name,
+                                       pg_get_functiondef(t.oid)
+                                from pg_catalog.pg_proc t
+                                         join pg_catalog.pg_namespace s
+                                              on t.pronamespace = s.oid
+                                where t.prokind not in ('a', 'w')
+    
+                                union all
+    
+                                select s.nspname,
+                                       tr.oid,
+                                       'trigger',
+                                       tr.tgname,
+                                       pg_get_triggerdef(tr.oid)
+    
+                                    from pg_catalog.pg_trigger tr
+                                    join pg_catalog.pg_class c
+                                    on tr.tgrelid = c.oid
+                                    join pg_catalog.pg_namespace s
+                                    on c.relnamespace = s.oid
+                                    where not tr.tgisinternal
+                                )
+    
+    select *
+    from objects_as_created t
+    where t.schema_name not in ('information_schema', 'pg_catalog')
+      and t.schema_name not like 'pg_toast%%'
+      and t.schema_name not like 'pg_temp_%%'
+      and t.schema_name = coalesce( %s, t.schema_name )
+    order by t.oid;
+    '''
+
     routines_text_select = '''
     SELECT s.nspname as schema_name, 
            case when count(*) over (partition by f.proname) > 1 then
