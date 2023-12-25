@@ -178,10 +178,17 @@ class ChangeLog:
 
     def __init__(self,
                  parent_path: str,
-                 changelog_file_name: str):
+                 changelog_file_name: str,
+                 encoding='utf-8'):
         self.parent_path = parent_path
         self.file_name = changelog_file_name
         self.change_log = deepcopy(_MAIN_LOG_TEMPLATE)
+
+        change_log_path = os.path.join(self.parent_path, self.file_name)
+        with open(change_log_path, 'r', encoding=encoding) as f:
+            data = f.read()
+            if data:
+                self.change_log = json.loads(data)
 
     def add_change_set(self,
                        change_set: ChangeSet):
