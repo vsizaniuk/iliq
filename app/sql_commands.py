@@ -184,3 +184,7 @@ class PostgreSQLCommands(Enum):
              cols.oid
     order by cols.oid asc
     '''
+
+    databasechangelog_delete = '''
+    delete from {schema_name}.databasechangelog where id = coalesce(%s, id)
+    '''
