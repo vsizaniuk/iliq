@@ -156,6 +156,24 @@ class ChangeSet:
         change_set_f.close()
 
 
+class VersionTag:
+    def __init__(self,
+                 change_set_id: str,
+                 author: str,
+                 version: str):
+        self.id = change_set_id
+        self.author = author
+        self.version = version
+
+    def get_object(self):
+        res = deepcopy(_VERSION_TEMPLATE)
+        res['changeSet']['id'] = self.id
+        res['changeSet']['author'] = self.author
+        res['changeSet']['changes'][0]['tagDatabase']['tag'] = self.version
+
+        return res
+
+
 class ChangeLog:
 
     def __init__(self,
