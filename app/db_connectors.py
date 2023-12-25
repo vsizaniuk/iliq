@@ -56,6 +56,18 @@ class DBAccess(ABC):
     def get_views_routines_triggers(self):
         ...
 
+    @abstractmethod
+    def delete_change_set(self):
+        ...
+
+    @abstractmethod
+    def truncate_change_log(self):
+        ...
+
+    @abstractmethod
+    def execute_any_sql(self):
+        ...
+
 
 class PostgreSQLAccess(DBAccess):
 
@@ -156,3 +168,40 @@ class PostgreSQLAccess(DBAccess):
             cur.execute(self.SQL.views_routines_triggers_select.value, (None,))
             for line in cur:
                 yield line
+
+    def delete_change_set(self,
+                          change_set_id: str,
+                          change_log_schema: str = 'public'):
+        if not self.connected:
+            self.connect()
+
+        if not change_set_id:
+            raise ValueError
+
+        with self.conn.cursor() as cur:
+            sql_cmd = self.SQL.databasechangelog_delete.value.format(schema_name=change_log_schema)
+            cur.execute(sql_cmd,
+                        (change_set_id,))
+
+        self.conn.commit()
+
+    def truncate_change_log(self, change_log_schema: str = 'public'):
+        if not self.connected:
+            self.connect()
+
+        with self.conn.cursor() as cur:
+            sql_cmd = self.SQL.databasechangelog_delete.value.format(schema_name=change_log_schema)
+            cur.execute(sql_cmd,
+                        (None,))
+
+        self.conn.commit()
+
+    def execute_any_sql(self, sql, *params, commit=True):
+        if not self.connected:
+            self.connect()
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql, params)
+
+        if commit:
+            self.conn.commit()
