@@ -1,5 +1,6 @@
 import os
 import subprocess
+import re
 
 from enum import Enum
 from .db_connectors import DBAccess
@@ -90,7 +91,25 @@ class LiqInterpreter:
         else:
             cmd = LiqCommands.UPDATE_SQL.format(changelog_file=self.change_log.file_name,
                                                 defaults_file=self.defaults_file)
-        subprocess.run(cmd, shell=True, cwd=self.dir_tree.parent_dir)
+        res = subprocess.run(cmd,
+                             shell=True,
+                             cwd=self.dir_tree.parent_dir,
+                             capture_output=True)
+
+        res = res.stdout.decode()
+
+        return res
+
+    def get_update_sql_changelog_dml(self, contexts: list = None):
+        upd_str = self.get_update_sql(contexts=contexts)
+        log_insert_pattern = re.compile('insert.*databasechangelog .*;', flags=re.IGNORECASE)
+        for cmd in upd_str.split(sep='\n'):
+            for c in re.findall(log_insert_pattern, cmd):
+                yield c
+
+    def upload_sql_changelog(self, contexts: list = None):
+        for cmd in self.get_update_sql_changelog_dml(contexts=contexts):
+            self.db_driver.execute_any_sql(cmd)
 
     def update(self, contexts: list=None):
         if contexts:
