@@ -189,6 +189,9 @@ class ChangeLog:
         include['include']['file'] = change_set.path.replace(self.parent_path, '.')
         self.change_log['databaseChangeLog'].append(include)
 
+    def add_version_tag(self, version_tag: VersionTag):
+        self.change_log['databaseChangeLog'].append(version_tag.get_object())
+
     def save_change_log(self,
                         encoding='utf-8'):
         change_log_path = os.path.join(self.parent_path, self.file_name)
