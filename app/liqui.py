@@ -74,6 +74,14 @@ class LiqInterpreter:
                                                        defaults_file=self.defaults_file)
         subprocess.run(cmd, shell=True)
 
+    def create_liq_tables(self):
+        cmd = LiqCommands.TAG_DATABASE.format(defaults_file=self.defaults_file,
+                                              version='init_tag')
+
+        subprocess.run(cmd, shell=True)
+
+        self.db_driver.truncate_change_log()
+
     def get_update_sql(self, contexts: list=None):
         if contexts:
             cmd = LiqCommands.CONTEXT_UPDATE_SQL.format(context=','.join(contexts),
