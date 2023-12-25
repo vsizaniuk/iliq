@@ -5,6 +5,13 @@ from abc import ABC, abstractmethod
 from .sql_commands import PostgreSQLCommands
 
 
+_SQL_CMDS_SEPARATORS_MAP = {
+    'postgresql': ';',
+    'oracle': ';',
+    'mssql': 'GO'
+}
+
+
 class DBAccess(ABC):
 
     @abstractmethod
@@ -20,6 +27,10 @@ class DBAccess(ABC):
     @property
     def connected(self):
         return bool(self.conn)
+
+    @property
+    def sql_sep(self):
+        return _SQL_CMDS_SEPARATORS_MAP[self.rdbms_type]
 
     @abstractmethod
     def get_all_schemas(self):
