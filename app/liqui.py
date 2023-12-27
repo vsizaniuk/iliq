@@ -84,7 +84,7 @@ class LiqInterpreter:
 
         self.db_driver.truncate_change_log()
 
-    def get_update_sql(self, contexts: list=None):
+    def get_update_sql(self, contexts: list = None):
         if contexts:
             cmd = LiqCommands.CONTEXT_UPDATE_SQL.format(context=','.join(contexts),
                                                         changelog_file=self.change_log.file_name,
@@ -112,7 +112,7 @@ class LiqInterpreter:
         for cmd in self.get_update_sql_changelog_dml(contexts=contexts):
             self.db_driver.execute_any_sql(cmd)
 
-    def update(self, contexts: list=None):
+    def update(self, contexts: list = None):
         if contexts:
             cmd = LiqCommands.CONTEXT_UPDATE.format(context=','.join(contexts),
                                                     changelog_file=self.change_log.file_name,
