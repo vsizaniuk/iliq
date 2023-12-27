@@ -185,11 +185,14 @@ class ChangeLog:
         self.change_log = deepcopy(_MAIN_LOG_TEMPLATE)
         self.saved = True
 
-        change_log_path = os.path.join(self.parent_path, self.file_name)
-        with open(change_log_path, 'r', encoding=encoding) as f:
-            data = f.read()
-            if data:
-                self.change_log = json.loads(data)
+        try:
+            change_log_path = os.path.join(self.parent_path, self.file_name)
+            with open(change_log_path, 'r', encoding=encoding) as f:
+                data = f.read()
+                if data:
+                    self.change_log = json.loads(data)
+        except FileNotFoundError:
+            ...
 
     def add_change_set(self,
                        change_set: ChangeSet):
