@@ -269,7 +269,7 @@ class DirTree:
             o_file.write(ddl_cmd)
             o_file.close()
 
-    def _add_paths_to_object_rec(self, object_rec: dict):
+    def add_paths_to_object_rec(self, object_rec: dict):
         own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         type_path_name = self.o_types_paths[own_file[object_rec['object_type']]]
 
@@ -305,7 +305,7 @@ class DirTree:
                        'object_name': o_name,
                        'object_type': o_type}
 
-                self._add_paths_to_object_rec(res)
+                self.add_paths_to_object_rec(res)
 
                 yield res
 
@@ -318,7 +318,7 @@ class DirTree:
                                        self.o_types_paths[own_file[object_rec['object_type']]],
                                        f"{object_rec['object_name']}.sql")
 
-            self._add_paths_to_object_rec(object_rec)
+            self.add_paths_to_object_rec(object_rec)
 
             object_f = open(object_path, 'w', encoding=self.encoding)
             object_f.write(object_rec.pop('object_text'))
@@ -334,7 +334,7 @@ class DirTree:
                                         self.o_types_paths[own_file[routine_rec['object_type']]],
                                         f"{routine_rec['object_name']}.sql")
 
-            self._add_paths_to_object_rec(routine_rec)
+            self.add_paths_to_object_rec(routine_rec)
 
             routine_f = open(routine_path, 'w', encoding=self.encoding)
             routine_f.write(routine_rec.pop('object_text'))
@@ -350,7 +350,7 @@ class DirTree:
                                         self.o_types_paths[own_file[trigger_rec['object_type']]],
                                         f"{trigger_rec['object_name']}.sql")
 
-            self._add_paths_to_object_rec(trigger_rec)
+            self.add_paths_to_object_rec(trigger_rec)
 
             trigger_f = open(trigger_path, 'w', encoding=self.encoding)
             trigger_f.write(trigger_rec.pop('object_text'))
@@ -366,7 +366,7 @@ class DirTree:
                                        self.o_types_paths[own_file[m_view_rec['object_type']]],
                                        f"{m_view_rec['object_name']}.sql")
 
-            self._add_paths_to_object_rec(m_view_rec)
+            self.add_paths_to_object_rec(m_view_rec)
 
             m_view_f = open(m_view_path, 'w', encoding=self.encoding)
             m_view_f.write(m_view_rec.pop('object_text'))
@@ -382,7 +382,7 @@ class DirTree:
                                        self.o_types_paths[own_file[c_type_rec['object_type']]],
                                        f"{c_type_rec['object_name']}.sql")
 
-            self._add_paths_to_object_rec(c_type_rec)
+            self.add_paths_to_object_rec(c_type_rec)
 
             c_type_f = open(c_type_path, 'w', encoding=self.encoding)
             c_type_f.write(c_type_rec.pop('object_text'))
