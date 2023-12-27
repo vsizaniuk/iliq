@@ -121,7 +121,8 @@ class LiqInterpreter:
                                             defaults_file=self.defaults_file)
         subprocess.run(cmd, shell=True, cwd=self.dir_tree.parent_dir)
 
-    def init_project(self):
+    def save_change_log(self):
+        self.change_log.save_change_log(encoding=self.dir_tree.encoding)
 
     def put_change_set(self, object_rec: dict):
         o_type = DDLTypesMap[object_rec['object_type']]
