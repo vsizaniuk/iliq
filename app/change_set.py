@@ -183,6 +183,7 @@ class ChangeLog:
         self.parent_path = parent_path
         self.file_name = changelog_file_name
         self.change_log = deepcopy(_MAIN_LOG_TEMPLATE)
+        self.saved = True
 
         change_log_path = os.path.join(self.parent_path, self.file_name)
         with open(change_log_path, 'r', encoding=encoding) as f:
@@ -195,9 +196,13 @@ class ChangeLog:
         include = deepcopy(_INCLUDE_TEMPLATE)
         include['include']['file'] = change_set.path.replace(self.parent_path, '.')
         self.change_log['databaseChangeLog'].append(include)
+        if self.saved:
+            self.saved = not self.saved
 
     def add_version_tag(self, version_tag: VersionTag):
         self.change_log['databaseChangeLog'].append(version_tag.get_object())
+        if self.saved:
+            self.saved = not self.saved
 
     def save_change_log(self,
                         encoding='utf-8'):
@@ -205,3 +210,4 @@ class ChangeLog:
         change_log_f = open(change_log_path, 'w', encoding=encoding)
         change_log_f.write(pretty_json(self.change_log))
         change_log_f.close()
+        self.saved = not self.saved
