@@ -143,13 +143,151 @@ class LiqInterpreter:
 
         self.change_log.add_change_set(change_set)
 
+    def init_project(self):
+
+        self.dir_tree.create_dir_tree(recreate=True)
+        self.generate_change_log()
+
         dump_file_path = os.path.join(self.dir_tree.parent_dir, self.dump_file_name)
         for object_rec in self.dir_tree.put_ddl_file_into_tree(dump_file_path):
-            put_change_set(object_rec)
+            self.put_change_set(object_rec)
 
         for func in (self.dir_tree.put_composite_types_into_tree,
                      self.dir_tree.put_views_routines_triggers_into_tree):
             for object_rec in func():
-                put_change_set(object_rec)
+                self.put_change_set(object_rec)
 
-        self.change_log.save_change_log(encoding=self.dir_tree.encoding)
+        self.save_change_log()
+
+
+class LiqInterface:
+
+    def __init__(self,
+                 interpreter: LiqInterpreter):
+        self.interpreter = interpreter
+
+        self.commands_map = {'init_project': (self.run_command,
+                                              self.interpreter.init_project,
+                                              0, 'Creates a new project from scratch'),
+                             'create_liq_tabs': (self.run_command,
+                                                 self.interpreter.create_liq_tables,
+                                                 1, 'Creates liquibase changelog tables in database'),
+                             'get_update_sql': (self.run_context_command,
+                                                self.interpreter.get_update_sql,
+                                                2, 'Shows (but not applying) changes to be deployed'),
+                             'upload_sql_changelog': (self.run_context_command,
+                                                      self.interpreter.upload_sql_changelog,
+                                                      3, 'Upload changelogs into liquibase changelog tables '
+                                                      '(without applying)'),
+                             'update': (self.run_context_command,
+                                        self.interpreter.update,
+                                        4, 'Applies current changes to database'),
+                             'put_change_set': (self.add_changeset,
+                                                self.interpreter.put_change_set,
+                                                5, 'Adds a new changeset to the changelog'),
+                             'save_change_log': (self.run_command,
+                                                 self.interpreter.save_change_log,
+                                                 6, 'Saves changelog file'),
+                             'exit': (self.run_command,
+                                      self.exit,
+                                      7, 'Stop and exit'),
+                             'help': (self.run_command,
+                                      self.print_help,
+                                      8, 'Prints this message')}
+
+    @property
+    def dir_tree(self):
+        return self.interpreter.dir_tree
+
+    @property
+    def db_driver(self):
+        return self.interpreter.db_driver
+
+    @staticmethod
+    def format_cmd(cmd: str):
+        res = re.sub(r'^\s+|\s+$', '', cmd)
+        res = res.lower()
+        return res
+
+    def y_n_bool(self, answer: str):
+        answer = self.format_cmd(answer)
+        return answer == 'y'
+
+    def welcome(self):
+        print(f'Interactive liquibase interface for {self.db_driver.db_name} database')
+        print(f'Parent folder is {self.dir_tree.parent_dir}')
+        print(f'Changelog file is {self.interpreter.change_log.file_name}')
+
+    def print_help(self):
+        as_list = [(k, v) for k, v in self.commands_map.items()]
+        for k, v in sorted(as_list, key=lambda x: x[1][2]):
+            print(f'Command {k} hint: {v[3]}')
+
+    def cmd_lookup(self, cmd):
+        res = ''
+        if cmd in self.commands_map:
+            return cmd
+        matches = get_close_matches(cmd, self.commands_map, 3, cutoff=0.4)
+        if matches:
+            print('Exact command is not found; closest options: \n', '\n'.join(matches))
+        else:
+            print('Exact command is not found')
+
+        return ''
+
+    def run(self):
+        self.welcome()
+        while True:
+            cmd = input('>>> ')
+            cmd = self.format_cmd(cmd)
+            cmd = self.cmd_lookup(cmd)
+            if cmd:
+                self.commands_map[cmd][0](cmd)
+            else:
+                continue
+
+    def ask_for_contexts(self):
+        contexts = []
+        while True:
+            cmd = input('>>> do we need to filter some contexts? (y/n) ')
+            answer = self.y_n_bool(cmd)
+            if not answer:
+                break
+
+            context = input('>>> enter a context: ')
+            context = self.format_cmd(context)
+            contexts.append(context)
+
+        contexts = list(set(contexts))
+
+        return contexts if contexts else None
+
+    def ask_for_changeset(self):
+        res = {
+            'object_type': self.format_cmd(input('>>> enter an object type: ')),
+            'schema_name': self.format_cmd(input('>>> enter a schema name: ')),
+            'object_name': self.format_cmd(input('>>> enter an object name: '))
+        }
+        self.dir_tree.add_paths_to_object_rec(res)
+        return res
+
+    def run_command(self, cmd):
+        self.commands_map[cmd][1]()
+
+    def run_context_command(self, cmd):
+        contexts = self.ask_for_contexts()
+        self.commands_map[cmd][1](contexts)
+
+    def add_changeset(self, cmd):
+        object_rec = self.ask_for_changeset()
+        self.commands_map[cmd][1](object_rec)
+
+    def exit(self):
+        answer = True
+        if not self.interpreter.change_log.saved:
+            answer = input('>>> Changelog got some changes and wasn''t saved. Continue? (y/n) ')
+            answer = self.y_n_bool(answer)
+
+        if answer:
+            print(f'Closing liquibase session for {self.db_driver.db_name}')
+            exit()
