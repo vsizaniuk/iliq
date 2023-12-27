@@ -2,6 +2,7 @@ import os
 import subprocess
 import re
 
+from difflib import get_close_matches
 from enum import Enum
 from .db_connectors import DBAccess
 from .dir_tree import DirTree, DDLTypesMap, ChangelogTypes
