@@ -133,9 +133,6 @@ class LiqInterpreter:
                                             defaults_file=self.defaults_file)
         subprocess.run(cmd, shell=True, cwd=self.dir_tree.parent_dir)
 
-    def save_change_log(self):
-        self.change_log.save_change_log(encoding=self.dir_tree.encoding)
-
     def put_change_set(self, object_rec: dict):
         o_type = DDLTypesMap[object_rec['object_type']]
         change_set = ChangeSet(schema_name=object_rec['schema_name'],
@@ -244,14 +241,16 @@ class LiqInterface:
         return answer == 'y'
 
     def welcome(self):
-        print(f'Interactive liquibase interface for {self.db_driver.db_name} database')
-        print(f'Parent folder is {self.dir_tree.parent_dir}')
-        print(f'Changelog file is {self.interpreter.change_log.file_name}')
+        print(f'Welcome to Interactive interface Iliq.'
+              f'\n{self.interpreter}')
 
     def print_help(self):
         as_list = [(k, v) for k, v in self.commands_map.items()]
         for k, v in sorted(as_list, key=lambda x: x[1][2]):
             print(f'Command {k} hint: {v[3]}')
+
+    def print_self(self):
+        print(self.interpreter)
 
     def cmd_lookup(self, cmd):
         res = ''
