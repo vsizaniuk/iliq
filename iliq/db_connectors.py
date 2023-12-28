@@ -87,6 +87,9 @@ class PostgreSQLAccess(DBAccess):
         self.port = port
         self.conn: psycopg.Connection = None
 
+    def __str__(self):
+        return f'DB driver for database {self.db_name} (rdbms is {self.rdbms_type})'
+
     @property
     def conn_str(self):
         return 'host={} port={} dbname={} user={} password={}'.format(self.host,
