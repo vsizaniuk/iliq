@@ -155,6 +155,15 @@ class LiqInterpreter:
 
         self.change_log.add_change_set(change_set)
 
+    def print_change_set(self):
+        print(self.change_log.last_added_change_set)
+
+    def save_change_log(self):
+        self.change_log.save_change_log(encoding=self.dir_tree.encoding)
+
+    def print_change_log(self):
+        print(self.change_log)
+
     def init_project(self):
 
         self.dir_tree.create_dir_tree(recreate=True)
@@ -194,18 +203,27 @@ class LiqInterface:
                              'update': (self.run_context_command,
                                         self.interpreter.update,
                                         4, 'Applies current changes to database'),
-                             'put_change_set': (self.add_changeset,
+                             'put_change_set': (self.run_add_changeset,
                                                 self.interpreter.put_change_set,
                                                 5, 'Adds a new changeset to the changelog'),
+                             'print_change_set': (self.run_command,
+                                                  self.interpreter.print_change_set,
+                                                  6, 'Prints last added changeset'),
                              'save_change_log': (self.run_command,
                                                  self.interpreter.save_change_log,
-                                                 6, 'Saves changelog file'),
+                                                 7, 'Saves changelog file'),
+                             'print_change_log': (self.run_command,
+                                                  self.interpreter.print_change_log,
+                                                  8, 'Prints current change log'),
                              'exit': (self.run_command,
                                       self.exit,
-                                      7, 'Stop and exit'),
+                                      9, 'Stop and exit'),
+                             'print': (self.run_command,
+                                       self.print_self,
+                                       10, 'Prints Iliq instance properties'),
                              'help': (self.run_command,
                                       self.print_help,
-                                      8, 'Prints this message')}
+                                      11, 'Prints this message')}
 
     @property
     def dir_tree(self):

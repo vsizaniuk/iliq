@@ -190,6 +190,7 @@ class ChangeLog:
         self.parent_path = parent_path
         self.file_name = changelog_file_name
         self.change_log = deepcopy(_MAIN_LOG_TEMPLATE)
+        self.last_added_change_set = None
         self.saved = True
 
         try:
@@ -210,11 +211,13 @@ class ChangeLog:
         include = deepcopy(_INCLUDE_TEMPLATE)
         include['include']['file'] = change_set.path.replace(self.parent_path, '.')
         self.change_log['databaseChangeLog'].append(include)
+        self.last_added_change_set = change_set
         if self.saved:
             self.saved = not self.saved
 
     def add_version_tag(self, version_tag: VersionTag):
         self.change_log['databaseChangeLog'].append(version_tag.get_object())
+        self.last_added_change_set = version_tag
         if self.saved:
             self.saved = not self.saved
 
