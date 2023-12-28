@@ -2,3 +2,7 @@ dump*
 test*
 *.properties
 .idea/
+dist
+*.egg-info/
+build
+.env
