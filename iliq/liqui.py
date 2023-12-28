@@ -66,6 +66,17 @@ class LiqInterpreter:
         self.defaults_file = defaults_file
         self.change_log = ChangeLog(dir_tree.parent_dir, changelog_file)
 
+    def __str__(self):
+        res = (f'[\n {self.__class__.__name__} instance'
+               f'\n\tChange log file: {self.change_log.file_name}'
+               f'\n\tChange log type: {self.dir_tree.changelog_type.name}'
+               f'\n\tDB driver: {self.db_driver}'
+               f'\n\tTree:\n\t\tDirTree is: {self.dir_tree}'
+               f'\n\t\tProject directory is: {self.dir_tree.parent_dir}'
+               f'\n]')
+
+        return res
+
     @property
     def dump_file_name(self):
         return f'dump_4_{self.db_driver.db_name}.sql'
