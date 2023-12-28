@@ -99,6 +99,10 @@ class ChangeSet:
                 rollback['sqlFile']['path'] = path
                 self.rollbacks.append(rollback)
 
+    def __str__(self):
+        res = f'Liq Change set: \n{self.get_json()}'
+        return res
+
     @property
     def path(self):
         if self._path is None:
@@ -165,6 +169,9 @@ class VersionTag:
         self.author = author
         self.version = version
 
+    def __str__(self):
+        return f'Liq version tag: \n{self.get_object()}'
+
     def get_object(self):
         res = deepcopy(_VERSION_TEMPLATE)
         res['changeSet']['id'] = self.id
@@ -193,6 +200,10 @@ class ChangeLog:
                     self.change_log = json.loads(data)
         except FileNotFoundError:
             ...
+
+    def __str__(self):
+        res = f'Liq Change log: \n{pretty_json(self.change_log)}'
+        return res
 
     def add_change_set(self,
                        change_set: ChangeSet):
