@@ -307,7 +307,7 @@ class LiqInterface:
         contexts = self.ask_for_contexts()
         self.commands_map[cmd][1](contexts)
 
-    def add_changeset(self, cmd):
+    def run_add_changeset(self, cmd):
         object_rec = self.ask_for_changeset()
         self.commands_map[cmd][1](object_rec)
 
