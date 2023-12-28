@@ -1,3 +1,4 @@
+import os
 import psycopg
 from psycopg.rows import dict_row
 
@@ -212,3 +213,14 @@ class PostgreSQLAccess(DBAccess):
 
         if commit:
             self.conn.commit()
+
+
+def get_db_driver(rdbms_type: str) -> DBAccess:
+    if rdbms_type == RDBMSTypes.postgresql.name:
+        return PostgreSQLAccess(os.environ.get('ILIQ_P_USERNAME'),
+                                os.environ.get('ILIQ_P_PASSWORD'),
+                                os.environ.get('ILIQ_P_DB_NAME'),
+                                os.environ.get('ILIQ_P_HOST'),
+                                os.environ.get('ILIQ_P_PORT'))
+    else:
+        raise NotImplementedError(f'RDBMS {rdbms_type} is not supported!')
