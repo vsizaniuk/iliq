@@ -1,15 +1,19 @@
 import psycopg
 from psycopg.rows import dict_row
 
+from enum import Enum
 from abc import ABC, abstractmethod
 from .sql_commands import PostgreSQLCommands
 
 
-_SQL_CMDS_SEPARATORS_MAP = {
-    'postgresql': ';',
-    'oracle': ';',
-    'mssql': 'GO'
-}
+class RDBMSTypes(Enum):
+    postgresql = (1, ';')
+    oracle = (2, ';')
+    mssql = (3, 'GO')
+
+    @property
+    def sql_sep(self):
+        return self.value[1]
 
 
 class DBAccess(ABC):
@@ -30,7 +34,7 @@ class DBAccess(ABC):
 
     @property
     def sql_sep(self):
-        return _SQL_CMDS_SEPARATORS_MAP[self.rdbms_type]
+        return RDBMSTypes[self.rdbms_type].sql_sep
 
     @abstractmethod
     def get_all_schemas(self):
