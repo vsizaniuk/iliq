@@ -2,10 +2,12 @@ import os
 import subprocess
 import re
 
+from dotenv import load_dotenv
+from pathlib import Path
 from difflib import get_close_matches
 from enum import Enum
-from .db_connectors import DBAccess
-from .dir_tree import DirTree, DDLTypesMap, ChangelogTypes
+from .db_connectors import DBAccess, RDBMSTypes, get_db_driver
+from .dir_tree import DirTree, DDLTypesMap, get_project_path
 from .change_set import ChangeSet, ChangeLog
 
 
@@ -320,3 +322,35 @@ class LiqInterface:
         if answer:
             print(f'Closing liquibase session for {self.db_driver.db_name}')
             exit()
+
+
+def cli_startup():
+
+    print('Hello there!\nLet''s prepare Iliq instance...')
+
+    rdbms_types = ', '.join([t.name for t in RDBMSTypes])
+    rdbms_type = input(f'Enter RDBMS type ({rdbms_types} are supported): ')
+    rdbms_type = LiqInterface.format_cmd(rdbms_type)
+
+    env_path = input('Enter .env file path: ')
+    env_path = Path(LiqInterface.format_cmd(env_path))
+    load_dotenv(dotenv_path=env_path)
+
+    db_driver = get_db_driver(rdbms_type)
+
+    project_path = get_project_path()
+
+    dir_tree = DirTree(db_driver, project_path)
+
+    properties_file_name = input('Enter Liquibase .properties file name: ')
+    properties_file_name = LiqInterface.format_cmd(properties_file_name)
+
+    change_log_file_name = input('Enter general changelog file name: ')
+    change_log_file_name = LiqInterface.format_cmd(change_log_file_name)
+
+    iliq = LiqInterpreter(db_driver, dir_tree, properties_file_name, change_log_file_name)
+    server = LiqInterface(iliq)
+
+    print()
+
+    server.run()
