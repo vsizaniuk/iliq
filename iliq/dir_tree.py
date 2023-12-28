@@ -197,6 +197,10 @@ class DirTree:
         self.o_types_paths = _OBJECTS_PATH_NAMES
         self.encoding = tree_encoding
 
+    def __str__(self):
+        res = f'DirTree instance for {self.db_driver.db_name} database'
+        return res
+
     @property
     def united_liq_path(self):
         return os.path.join(self.parent_dir, f'!{self.db_driver.db_name}_liq')
