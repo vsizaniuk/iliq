@@ -393,3 +393,11 @@ class DirTree:
             c_type_f.close()
 
             yield c_type_rec
+
+
+def get_project_path():
+    path = os.environ.get('ILIQ_PROJECT_PATH')
+    while not path:
+        path = input('Enter Liquibase project path: ')
+
+    return path
