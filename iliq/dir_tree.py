@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from shutil import rmtree
 
-from .db_connectors import DBAccess
+from .db_connectors import DBAccess, RDBMSTypes
 
 _OBJECTS_PATH_NAMES = ('tables', 'views', 'procedures', 'functions',
                        'packages', 'scripts', 'triggers', 'sequences',
@@ -125,7 +125,7 @@ class ChangelogTypes(Enum):
 class DirTree:
 
     @staticmethod
-    def classify_ddl(ddl_cmd) -> tuple[str, str]:
+    def classify_ddl(ddl_cmd) -> tuple[str, DDLTypesMap]:
         found = False
         current_context = o_name = None
 
@@ -144,13 +144,13 @@ class DirTree:
                 o_name = part
                 for tp in ('!TABLE', '!SEQUENCE'):
                     if tp in current_context:
-                        current_context = current_context[tp]
+                        current_context = DDLTypesMap[current_context[tp]]
                         return o_name, current_context
             else:
                 current_context = current_context[part]
                 if isinstance(current_context, str):
                     found = True
-
+        current_context = DDLTypesMap[current_context]
         return o_name, current_context
 
     @staticmethod
@@ -197,7 +197,7 @@ class DirTree:
         self.parent_dir = parent_dir
         self.changelog_type = changelog_type
         self.rollbacks = rollbacks
-        self.o_types_paths = _OBJECTS_PATH_NAMES
+        self.o_types_paths = tuple(DDLTypesMap.get_ddl_path_names(db_driver.rdbms_type))
         self.encoding = tree_encoding
 
     def __str__(self):
@@ -227,34 +227,31 @@ class DirTree:
             liq_schema_path = os.path.join(self.united_liq_path, s)
             os.mkdir(schema_path)
             os.mkdir(liq_schema_path)
+
             for tp in self.o_types_paths:
-                if tp == 'packages' and self.db_driver.rdbms_type != 'oracle':
-                    continue
-                tp_path = schema_path + f'/{tp}'
+                tp_path = os.path.join(schema_path, tp)
                 os.mkdir(tp_path)
                 if self.rollbacks:
-                    tp_r_path = tp_path + '/rollbacks'
+                    tp_r_path = os.path.join(tp_path, 'rollbacks')
                     os.mkdir(tp_r_path)
 
     def put_object_into_tree(self,
-                             o_type: str,
+                             o_type: DDLTypesMap,
                              o_name: str,
                              ddl_cmd: str):
-        own_file, share_file = DDLTypesMap.get_ddl_to_paths_map(True), DDLTypesMap.get_ddl_to_paths_map(False)
-
-        if o_type in share_file.keys():
-            if o_type in ('index', 'constraint'):
-                r_pattern = r'(?<=ON)[\w\."\s]*(?=\()' if o_type == 'index' else r'(?<=TABLE).*(?=ADD)'
+        if not o_type.own_file:
+            if o_type.name in ('index', 'constraint'):
+                r_pattern = r'(?<=ON)[\w\."\s]*(?=\()' if o_type.name == 'index' else r'(?<=TABLE).*(?=ADD)'
                 o_name = re.search(r_pattern, ddl_cmd)
                 o_name = o_name.group().strip().replace('"', '')
 
             o_path = o_name.split(sep='.')
             schema, o_name = o_path[0], o_path[1]
 
-            for o_path_type in share_file[o_type]:
+            for o_path_type in o_type.path_name:
                 o_file_path = os.path.join(self.parent_dir,
                                            schema,
-                                           self.o_types_paths[o_path_type],
+                                           o_path_type,
                                            f'{o_name}.sql')
                 try:
                     o_file = open(o_file_path, 'r+', encoding=self.encoding)
@@ -265,30 +262,29 @@ class DirTree:
                 o_file.write(f'\n{ddl_cmd}')
                 o_file.close()
 
-        elif o_type in own_file.keys():
+        elif o_type.own_file:
             o_path = o_name.split(sep='.')
             schema, o_name = o_path[0], o_path[1]
             o_file_path = os.path.join(self.parent_dir,
                                        schema,
-                                       self.o_types_paths[own_file[o_type]],
+                                       o_type.path_name,
                                        f'{o_name}.sql')
             o_file = open(o_file_path, 'w', encoding=self.encoding)
             o_file.write(ddl_cmd)
             o_file.close()
 
     def add_paths_to_object_rec(self, object_rec: dict):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
-        type_path_name = self.o_types_paths[own_file[object_rec['object_type']]]
+        o_type = DDLTypesMap[object_rec['object_type']]
 
         object_rec['sql_file_path'] = os.path.join('.',
                                                    object_rec['schema_name'],
-                                                   type_path_name,
+                                                   o_type.path_name,
                                                    f"{object_rec['object_name']}.sql")
 
         if self.rollbacks:
             object_rec['rollback_file_path'] = os.path.join('.',
                                                             object_rec['schema_name'],
-                                                            type_path_name,
+                                                            o_type.path_name,
                                                             'rollbacks',
                                                             f"rollback4{object_rec['object_name']}.sql")
 
@@ -296,33 +292,31 @@ class DirTree:
                                file_name: str,
                                cmd_sep=';',
                                file_encoding='utf-8'):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for cmd in self.parse_ddl_file(file_name, cmd_sep, file_encoding):
             o_name, o_type = self.classify_ddl(cmd)
             o_name = o_name.replace('"', '')
 
             self.put_object_into_tree(o_type, o_name, cmd)
 
-            if o_type in own_file:
+            if o_type.own_file:
                 o_name = o_name.replace('"', '')
                 o_path = o_name.split(sep='.')
                 schema, o_name = o_path[0], o_path[1]
 
                 res = {'schema_name': schema,
                        'object_name': o_name,
-                       'object_type': o_type}
+                       'object_type': o_type.name}
 
                 self.add_paths_to_object_rec(res)
 
                 yield res
 
     def put_views_routines_triggers_into_tree(self):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
-
         for object_rec in self.db_driver.get_views_routines_triggers():
+            o_type = DDLTypesMap[object_rec['object_type']]
             object_path = os.path.join(self.parent_dir,
                                        object_rec['schema_name'],
-                                       self.o_types_paths[own_file[object_rec['object_type']]],
+                                       o_type.path_name,
                                        f"{object_rec['object_name']}.sql")
 
             self.add_paths_to_object_rec(object_rec)
@@ -334,11 +328,11 @@ class DirTree:
             yield object_rec
 
     def put_routines_into_tree(self):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for routine_rec in self.db_driver.get_all_procedures():
+            o_type = DDLTypesMap[routine_rec['object_type']]
             routine_path = os.path.join(self.parent_dir,
                                         routine_rec['schema_name'],
-                                        self.o_types_paths[own_file[routine_rec['object_type']]],
+                                        o_type.path_name,
                                         f"{routine_rec['object_name']}.sql")
 
             self.add_paths_to_object_rec(routine_rec)
@@ -350,11 +344,11 @@ class DirTree:
             yield routine_rec
 
     def put_triggers_into_tree(self):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for trigger_rec in self.db_driver.get_all_triggers():
+            o_type = DDLTypesMap[trigger_rec['object_type']]
             trigger_path = os.path.join(self.parent_dir,
                                         trigger_rec['schema_name'],
-                                        self.o_types_paths[own_file[trigger_rec['object_type']]],
+                                        o_type.path_name,
                                         f"{trigger_rec['object_name']}.sql")
 
             self.add_paths_to_object_rec(trigger_rec)
@@ -366,11 +360,11 @@ class DirTree:
             yield trigger_rec
 
     def put_mat_views_into_tree(self):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for m_view_rec in self.db_driver.get_all_mat_views():
+            o_type = DDLTypesMap[m_view_rec['object_type']]
             m_view_path = os.path.join(self.parent_dir,
                                        m_view_rec['schema_name'],
-                                       self.o_types_paths[own_file[m_view_rec['object_type']]],
+                                       o_type.path_name,
                                        f"{m_view_rec['object_name']}.sql")
 
             self.add_paths_to_object_rec(m_view_rec)
@@ -382,11 +376,11 @@ class DirTree:
             yield m_view_rec
 
     def put_composite_types_into_tree(self):
-        own_file = DDLTypesMap.get_ddl_to_paths_map(True)
         for c_type_rec in self.db_driver.get_all_composite_types():
+            o_type = DDLTypesMap[c_type_rec['object_type']]
             c_type_path = os.path.join(self.parent_dir,
                                        c_type_rec['schema_name'],
-                                       self.o_types_paths[own_file[c_type_rec['object_type']]],
+                                       o_type.path_name,
                                        f"{c_type_rec['object_name']}.sql")
 
             self.add_paths_to_object_rec(c_type_rec)
