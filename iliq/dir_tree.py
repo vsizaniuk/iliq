@@ -33,77 +33,80 @@ _DDL_COMMANDS_MAP = {
 
 
 class DDLTypesMap(Enum):
-    table = (0, True, 'version', False, False, True)
-    view = (1, True, 'view', False, True, True)
-    procedure = (2, True, 'proc', False, True, True)
-    function = (3, True, 'proc', False, True, True)
-    package = (4, True, 'proc', False, True, True)
-    script = (5, True, 'version', False, False, True)
-    trigger = (6, True, 'proc', False, True, True)
-    sequence = (7, True, 'version', False, False, True)
-    materialized_view = (8, True, 'view', False, True, True)
-    composite_type = (9, True, 'version', False, False, True)
+    table = (0, 0, True, 'version', False, False, True, 'all')
+    view = (1, 1, True, 'view', False, True, True, 'all')
+    procedure = (2, 2, True, 'proc', False, True, True, 'all')
+    function = (3, 3, True, 'proc', False, True, True, 'all')
+    package = (4, 4, True, 'proc', False, True, True, (RDBMSTypes.oracle.name,))
+    script = (5, 5, True, 'version', False, False, True, 'all')
+    trigger = (6, 6, True, 'proc', False, True, True, 'all')
+    sequence = (7, 7, True, 'version', False, False, True, 'all')
+    materialized_view = (8, 8, True, 'view', False, True, True, 'all')
+    composite_type = (9, 9, True, 'version', False, False, True, 'all')
 
-    index = ((0,), False, 'version')
-    constraint = ((0,), False, 'version')
-    table_comment = ((0,), False, 'version')
-    column_comment = ((0, 1), False, 'version')
-    view_comment = ((1,), False, 'version')
+    index = (10, (0,), False, 'version')
+    constraint = (11, (0,), False, 'version')
+    table_comment = (12, (0,), False, 'version')
+    column_comment = (13, (0, 1), False, 'version')
+    view_comment = (14, (1,), False, 'version')
 
     @classmethod
-    def get_own_file_types(cls):
+    def get_ddl_path_names(cls, rdbms_type):
         for tp in cls:
             if tp.own_file:
-                yield tp
-
-    @classmethod
-    def get_share_file_types(cls):
-        for tp in cls:
-            if not tp.own_file:
-                yield tp
-
-    @classmethod
-    def get_ddl_to_paths_map(cls, own_file: bool):
-        retrieve_func = cls.get_own_file_types if own_file else cls.get_share_file_types
-        res = {tp.name: tp.path_name_ref for tp in retrieve_func()}
-        return res
-
-    @classmethod
-    def get_ddl_to_liq_context_map(cls, own_file: bool):
-        retrieve_func = cls.get_own_file_types if own_file else cls.get_share_file_types
-        res = {tp.name: tp.liq_context for tp in retrieve_func()}
-        return res
+                if tp.rdbms_types == 'all':
+                    yield tp.path_name
+                elif rdbms_type in tp.rdbms_types:
+                    yield tp.path_name
 
     @property
-    def path_name_ref(self):
+    def ord_no(self):
         return self.value[0]
 
     @property
-    def own_file(self):
+    def path_name_ref(self):
         return self.value[1]
 
     @property
-    def liq_context(self):
+    def own_file(self):
         return self.value[2]
 
     @property
-    def run_always(self):
-        try:
-            return self.value[3]
-        except IndexError:
-            return -1
+    def path_name(self):
+        if self.own_file:
+            return _OBJECTS_PATH_NAMES[self.path_name_ref]
+        else:
+            return tuple(_OBJECTS_PATH_NAMES[r] for r in self.path_name_ref)
 
     @property
-    def run_on_change(self):
+    def liq_context(self):
+        return self.value[3]
+
+    @property
+    def run_always(self):
         try:
             return self.value[4]
         except IndexError:
             return -1
 
     @property
-    def fail_on_error(self):
+    def run_on_change(self):
         try:
             return self.value[5]
+        except IndexError:
+            return -1
+
+    @property
+    def fail_on_error(self):
+        try:
+            return self.value[6]
+        except IndexError:
+            return -1
+
+    @property
+    def rdbms_types(self):
+        try:
+            return self.value[7]
         except IndexError:
             return -1
 
