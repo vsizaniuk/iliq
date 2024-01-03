@@ -84,7 +84,7 @@ class PostgreSQLAccess(DBAccess):
                  db_name: str,
                  host: str,
                  port=5432):
-        self.rdbms_type = 'postgresql'
+        self.rdbms_type = RDBMSTypes.postgresql.name
         self.user_name = user_name
         self.password = password
         self.db_name = db_name
