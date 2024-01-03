@@ -70,7 +70,7 @@ class DBAccess(ABC):
         ...
 
     @abstractmethod
-    def execute_any_sql(self):
+    def execute_any_sql(self, cmd: str):
         ...
 
 
