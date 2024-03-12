@@ -188,3 +188,208 @@ class PostgreSQLCommands(Enum):
     databasechangelog_delete = '''
     delete from {schema_name}.databasechangelog where id = coalesce(%s, id)
     '''
+
+
+class OracleSQLCommands(Enum):
+    schema_list_select = '''
+    select t.username as schema_name
+      from all_users t
+     where t.oracle_maintained = 'N'
+           and t.username = coalesce(:schema_name, t.username)
+    '''
+
+    views_routines_triggers_select = '''
+    WITH object_list AS (
+        SELECT
+            t.owner AS schema_name,
+            t.object_name,
+            t.object_type,
+            CASE
+                WHEN t.object_type = 'TYPE'              THEN
+                    1
+                WHEN t.object_type = 'PACKAGE'           THEN
+                    2
+                WHEN t.object_type = 'VIEW'              THEN
+                    2
+                WHEN t.object_type = 'MATERIALIZED VIEW' THEN
+                    2
+                WHEN t.object_type = 'PROCEDURE'         THEN
+                    3
+                WHEN t.object_type = 'FUNCTION'          THEN
+                    3
+                WHEN t.object_type = 'TRIGGER'           THEN
+                    3
+            END     AS ot_order,
+            t.object_id,
+            t.timestamp
+        FROM
+            all_objects t
+        WHERE
+            t.object_type IN ( 'PACKAGE', 'TYPE', 'TRIGGER',
+                               'PROCEDURE', 'FUNCTION', 'VIEW', 'MATERIALIZED VIEW' )
+            AND t.owner IN (
+                SELECT
+                    t.username AS schema_name
+                FROM
+                    all_users t
+                WHERE
+                    t.oracle_maintained = 'N'
+            )
+    )
+    SELECT
+        t.schema_name,
+        t.object_name,
+        t.object_type, 
+        DBMS_METADATA.GET_DDL(t.object_type, t.object_name, t.schema_name) as object_text
+    FROM
+        object_list t
+    where t.schema_name = coalesce(:schema_name, t.schema_name)
+    ORDER BY
+        t.object_id,
+        t.ot_order
+    '''
+
+    routines_text_select = '''
+    WITH object_list AS (
+        SELECT
+            t.owner AS schema_name,
+            t.object_name,
+            t.object_type,
+            CASE
+                WHEN t.object_type = 'PACKAGE'           THEN
+                    2
+                WHEN t.object_type = 'PROCEDURE'         THEN
+                    3
+                WHEN t.object_type = 'FUNCTION'          THEN
+                    3
+            END     AS ot_order,
+            t.object_id,
+            t.timestamp
+        FROM
+            all_objects t
+        WHERE
+            t.object_type IN ( 'PACKAGE', 'PROCEDURE', 'FUNCTION' )
+            AND t.owner IN (
+                SELECT
+                    t.username AS schema_name
+                FROM
+                    all_users t
+                WHERE
+                    t.oracle_maintained = 'N'
+            )
+    )
+    SELECT
+        t.schema_name,
+        t.object_name,
+        t.object_type, 
+        DBMS_METADATA.GET_DDL(t.object_type, t.object_name, t.schema_name) as object_text
+    FROM
+        object_list t
+    where t.schema_name = coalesce(:schema_name, t.schema_name)
+    ORDER BY
+        t.object_id,
+        t.ot_order
+    '''
+
+    triggers_text_select = '''
+    WITH object_list AS (
+        SELECT
+        t.owner AS schema_name,
+        t.object_name,
+        t.object_type,
+        t.object_id,
+        t.timestamp
+    FROM
+        all_objects t
+    WHERE
+        t.object_type IN ('TRIGGER')
+        AND t.owner IN (
+            SELECT
+                t.username AS schema_name
+            FROM
+                all_users t
+            WHERE
+                t.oracle_maintained = 'N'
+        )
+    )
+    SELECT
+        t.schema_name,
+        t.object_name,
+        t.object_type, 
+        DBMS_METADATA.GET_DDL(t.object_type, t.object_name, t.schema_name) as object_text
+    FROM
+        object_list t
+    where t.schema_name = coalesce(:schema_name, t.schema_name)
+    ORDER BY
+        t.object_id
+    '''
+
+    materialized_views_select = '''
+    WITH object_list AS (
+        SELECT
+            t.owner AS schema_name,
+            t.object_name,
+            t.object_type,
+            t.object_id,
+            t.timestamp
+        FROM
+            all_objects t
+        WHERE
+            t.object_type IN ( 'MATERIALIZED VIEW' )
+            AND t.owner IN (
+                SELECT
+                    t.username AS schema_name
+                FROM
+                    all_users t
+                WHERE
+                    t.oracle_maintained = 'N'
+            )
+    )
+    SELECT
+        t.schema_name,
+        t.object_name,
+        t.object_type, 
+        DBMS_METADATA.GET_DDL(t.object_type, t.object_name, t.schema_name) as object_text
+    FROM
+        object_list t
+    where t.schema_name = coalesce(:schema_name, t.schema_name)
+    ORDER BY
+        t.ot_order
+    '''
+
+    object_types_select = '''
+    WITH object_list AS (
+        SELECT
+            t.owner AS schema_name,
+            t.object_name,
+            t.object_type,
+            t.object_id,
+            t.timestamp
+        FROM
+            all_objects t
+        WHERE
+            t.object_type IN ( 'TYPE')
+            AND t.owner IN (
+                SELECT
+                    t.username AS schema_name
+                FROM
+                    all_users t
+                WHERE
+                    t.oracle_maintained = 'N'
+            )
+    )
+    SELECT
+        t.schema_name,
+        t.object_name,
+        t.object_type, 
+        DBMS_METADATA.GET_DDL(t.object_type, t.object_name, t.schema_name) as object_text
+    FROM
+        object_list t
+    where t.schema_name = coalesce(:schema_name, t.schema_name)
+    ORDER BY
+        t.object_id
+    '''
+
+    databasechangelog_delete = '''
+    delete from {schema_name}.databasechangelog where id = coalesce(:id, id)
+    '''
